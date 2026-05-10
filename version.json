@@ -1,0 +1,5 @@
+{
+  "version": "1.0.1",
+  "apk_url": "https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json",
+  "changelog": "Fixed UI bugs + improved filters"
+}
