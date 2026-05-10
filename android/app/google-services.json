@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "92396295432",
+    "project_id": "watcher-opsy-d6a27",
+    "storage_bucket": "watcher-opsy-d6a27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:92396295432:android:d94f75d6a59704897048bd",
+        "android_client_info": {
+          "package_name": "com.example.my_list_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbk-9fgrIVtg1RTpgZwH5_lbEwg6zjZ3I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

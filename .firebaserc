@@ -1,0 +1,13 @@
+{
+  "projects": {},
+  "targets": {
+    "watcher-opsy-d6a27": {
+      "hosting": {
+        "app-web": [
+          "[137397989879-078ian8tsh43s0naitb8oph53jilluc5.apps.googleusercontent.com]"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
