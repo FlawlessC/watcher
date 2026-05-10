@@ -5,6 +5,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'package:flutter/services.dart';
+import 'update_service.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 final GoogleSignIn appGoogleSignIn = GoogleSignIn(
   clientId:
@@ -70,28 +75,28 @@ class SignInScreen extends StatelessWidget {
 
   Future<void> _signInWithGoogle() async {
     try {
-      final googleUser = await appGoogleSignIn.signIn();
-      if (googleUser == null) return;
+      final firebaseAuth = FirebaseAuth.instance;
 
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+      // 🌐 WEB → redirect flow (без popup вообще)
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
 
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
+        await firebaseAuth.signInWithRedirect(provider);
+        return;
+      }
+
+      // 📱 ANDROID / IOS → native Firebase Google provider
+      final provider = GoogleAuthProvider();
+
+      final userCredential = await firebaseAuth.signInWithPopup(provider);
 
       if (userCredential.user != null) {
-        debugPrint(
-          "Ура! Вход в Firebase выполнен: ${userCredential.user!.email}",
-        );
+        debugPrint("Login success: ${userCredential.user!.email}");
       }
     } on FirebaseAuthException catch (e) {
-      debugPrint("Ошибка Firebase Auth: ${e.code}");
+      debugPrint("FirebaseAuth error: ${e.code}");
     } catch (e) {
-      debugPrint("Другая ошибка: $e");
+      debugPrint("Unknown error: $e");
     }
   }
 
@@ -168,13 +173,80 @@ class _AppState extends State<App> {
 
       await batch.commit();
     }
+    return;
+  }
+
+  Future<void> downloadAndInstall(String url) async {
+    final dir = await getExternalStorageDirectory();
+    final filePath = "${dir!.path}/update.apk";
+
+    await Dio().download(url, filePath);
+
+    await OpenFile.open(filePath);
+  }
+
+  void showUpdateDialog(String apkUrl, String changelog) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Доступно обновление"),
+        content: Text(changelog),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Позже"),
+          ),
+          TextButton(
+            onPressed: () {
+              downloadAndInstall(apkUrl);
+            },
+            child: const Text("Обновить"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleWebRedirectResult() async {
+    if (!kIsWeb) return;
+
+    final result = await FirebaseAuth.instance.getRedirectResult();
+
+    if (result.user != null) {
+      debugPrint("Web login success: ${result.user!.email}");
+    }
   }
 
   @override
   void initState() {
     super.initState();
+
     _ensureDefaultCategories();
-  } //Метод для создания новой категории (списка)
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdate();
+    });
+
+    _handleWebRedirectResult();
+  }
+
+  bool _updateCheckRunning = false;
+
+  void _checkForUpdate() async {
+    if (_updateCheckRunning) return;
+    _updateCheckRunning = true;
+
+    try {
+      UpdateService.checkForUpdate(
+        onUpdate: (apkUrl, changelog) {
+          if (!mounted) return;
+          showUpdateDialog(apkUrl, changelog);
+        },
+      );
+    } finally {
+      _updateCheckRunning = false;
+    }
+  }
 
   void _showAddCategoryDialog() {
     // Локальный контроллер, не пересекается с полем класса

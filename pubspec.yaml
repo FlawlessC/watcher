@@ -34,9 +34,11 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
-  google_sign_in: ^6.1.6
-
-
+  google_sign_in: 6.3.0
+  http: ^1.2.0
+  dio: ^5.4.0
+  path_provider: ^2.1.0
+  open_file: ^3.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
