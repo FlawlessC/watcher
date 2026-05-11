@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'package:flutter/services.dart';
-import 'update_service.dart';
+import 'package:my_list_app/update_service.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
@@ -232,20 +232,18 @@ class _AppState extends State<App> {
 
   bool _updateCheckRunning = false;
 
-  void _checkForUpdate() async {
+  void _checkForUpdate() {
     if (_updateCheckRunning) return;
     _updateCheckRunning = true;
 
-    try {
-      UpdateService.checkForUpdate(
-        onUpdate: (apkUrl, changelog) {
-          if (!mounted) return;
-          showUpdateDialog(apkUrl, changelog);
-        },
-      );
-    } finally {
+    UpdateService.checkForUpdate(
+      onUpdate: (apkUrl, changelog) {
+        if (!mounted) return;
+        showUpdateDialog(apkUrl, changelog);
+      },
+    ).whenComplete(() {
       _updateCheckRunning = false;
-    }
+    });
   }
 
   void _showAddCategoryDialog() {
