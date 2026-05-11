@@ -94,8 +94,11 @@ class SignInScreen extends StatelessWidget {
       }
     } on FirebaseAuthException catch (e) {
       debugPrint("FirebaseAuth error: ${e.code}");
-    } catch (e) {
-      debugPrint("Unknown error: $e");
+    } catch (e, stack) {
+      debugPrint("GOOGLE SIGN IN ERROR: $e");
+      debugPrint("$stack");
+
+      rethrow;
     }
   }
 
@@ -222,13 +225,8 @@ class _AppState extends State<App> {
 
     _ensureDefaultCategories();
 
-   
-
     _handleWebRedirectResult();
   }
-
-
- 
 
   void _showAddCategoryDialog() {
     // Локальный контроллер, не пересекается с полем класса
