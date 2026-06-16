@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
+import 'package:package_info_plus/package_info_plus.dart';
 
 final GoogleSignIn appGoogleSignIn = GoogleSignIn(
   clientId:
@@ -193,30 +194,33 @@ class _AppState extends State<App> {
   }
 
   Future<void> checkForUpdate() async {
-    if (kIsWeb) return;
+  if (kIsWeb) return;
 
-    const currentBuild = 2;
+  final packageInfo = await PackageInfo.fromPlatform();
+  final currentBuild = int.parse(packageInfo.buildNumber);
 
-    try {
-      final response = await Dio().get(
-        'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
-      );
+  try {
+    final response = await Dio().get(
+      'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
+    );
 
-      final data = response.data is String
-          ? jsonDecode(response.data)
-          : response.data;
-      debugPrint("UPDATE CHECK DATA: $data");
-      final latestBuild = data['build'] as int;
-      final apkUrl = data['apk_url'] as String;
-      final changelog = data['changelog'] as String;
+    final data = response.data is String
+        ? jsonDecode(response.data)
+        : response.data;
 
-      if (latestBuild > currentBuild) {
-        showUpdateDialog(apkUrl, changelog);
-      }
-    } catch (e) {
-      debugPrint("UPDATE CHECK ERROR: $e");
+    debugPrint("UPDATE CHECK DATA: $data");
+
+    final latestBuild = data['build'] as int;
+    final apkUrl = data['apk_url'] as String;
+    final changelog = data['changelog'] as String;
+
+    if (latestBuild > currentBuild) {
+      showUpdateDialog(apkUrl, changelog);
     }
+  } catch (e) {
+    debugPrint("UPDATE CHECK ERROR: $e");
   }
+}
 
   Future<void> downloadAndInstall(String url) async {
     final dir = await getExternalStorageDirectory();
