@@ -1,6 +1,7 @@
-{
-    "version": "1.0.1",
-    "build": 999,
-    "apk_url": "https://raw.githubusercontent.com/FlawlessC/watcher/main/app-release.apk",
-    "changelog": "fix auth logic / UI improvements"
+
+   {
+  "version": "1.0.2",
+  "build": 3,
+  "apk_url": "https://github.com/FlawlessC/watcher/releases/download/v1.0.2/app-release.apk",
+  "changelog": "fix auth logic / UI improvements"
 }

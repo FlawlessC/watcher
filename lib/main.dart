@@ -9,10 +9,11 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:convert';
 
 final GoogleSignIn appGoogleSignIn = GoogleSignIn(
   clientId:
-      '92396295432-28qavr9votkv53p98u6sdlhfpet9vuru.apps.googleusercontent.com', // Web Client ID из Firebase
+      '92396295432-28qavr9votkv53p98u6sdlhfpet9vuru.apps.googleusercontent.com',
   scopes: <String>['email', 'profile'],
 );
 
@@ -76,29 +77,42 @@ class SignInScreen extends StatelessWidget {
     try {
       final firebaseAuth = FirebaseAuth.instance;
 
-      // 🌐 WEB → redirect flow (без popup вообще)
+      // WEB
       if (kIsWeb) {
         final provider = GoogleAuthProvider();
 
-        await firebaseAuth.signInWithRedirect(provider);
+        provider.setCustomParameters({'prompt': 'select_account'});
+
+        await firebaseAuth.signInWithPopup(provider);
         return;
       }
 
-      // 📱 ANDROID / IOS → native Firebase Google provider
-      final provider = GoogleAuthProvider();
+      // ANDROID / IOS
+      await appGoogleSignIn.signOut();
 
-      final userCredential = await firebaseAuth.signInWithPopup(provider);
+      final GoogleSignInAccount? googleUser = await appGoogleSignIn.signIn();
 
-      if (userCredential.user != null) {
-        debugPrint("Login success: ${userCredential.user!.email}");
+      if (googleUser == null) {
+        debugPrint("Google sign in cancelled");
+        return;
       }
-    } on FirebaseAuthException catch (e) {
-      debugPrint("FirebaseAuth error: ${e.code}");
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await firebaseAuth.signInWithCredential(
+        credential,
+      );
+
+      debugPrint("Login success: ${userCredential.user?.email}");
     } catch (e, stack) {
       debugPrint("GOOGLE SIGN IN ERROR: $e");
       debugPrint("$stack");
-
-      rethrow;
     }
   }
 
@@ -178,6 +192,32 @@ class _AppState extends State<App> {
     return;
   }
 
+  Future<void> checkForUpdate() async {
+    if (kIsWeb) return;
+
+    const currentBuild = 2;
+
+    try {
+      final response = await Dio().get(
+        'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
+      );
+
+      final data = response.data is String
+          ? jsonDecode(response.data)
+          : response.data;
+      debugPrint("UPDATE CHECK DATA: $data");
+      final latestBuild = data['build'] as int;
+      final apkUrl = data['apk_url'] as String;
+      final changelog = data['changelog'] as String;
+
+      if (latestBuild > currentBuild) {
+        showUpdateDialog(apkUrl, changelog);
+      }
+    } catch (e) {
+      debugPrint("UPDATE CHECK ERROR: $e");
+    }
+  }
+
   Future<void> downloadAndInstall(String url) async {
     final dir = await getExternalStorageDirectory();
     final filePath = "${dir!.path}/update.apk";
@@ -226,6 +266,10 @@ class _AppState extends State<App> {
     _ensureDefaultCategories();
 
     _handleWebRedirectResult();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkForUpdate();
+    });
   }
 
   void _showAddCategoryDialog() {
@@ -1329,11 +1373,8 @@ class _AppState extends State<App> {
                       : const Icon(Icons.account_circle),
                   onSelected: (value) async {
                     if (value == 'switch') {
-                      // На Web disconnect() не работает — просто signOut
-                      await appGoogleSignIn.signOut();
                       await FirebaseAuth.instance.signOut();
                     } else if (value == 'logout') {
-                      await appGoogleSignIn.signOut();
                       await FirebaseAuth.instance.signOut();
                     }
                   },
