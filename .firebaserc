@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "watcher-opsy-d6a27"
+  },
   "targets": {
     "watcher-opsy-d6a27": {
       "hosting": {

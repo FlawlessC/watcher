@@ -37,6 +37,7 @@ class MyApp extends StatelessWidget {
       builder: (_, ThemeMode currentMode, _) {
         // Заменили __ на _
         return MaterialApp(
+          title: 'Watcher',
           debugShowCheckedModeBanner: false,
           themeMode: currentMode,
           theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
@@ -45,7 +46,6 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
             colorSchemeSeed: Colors.indigo,
           ),
-          // Проверь, что AuthGate() написан без ошибок
           home: const AuthGate(),
         );
       },
@@ -194,41 +194,56 @@ class _AppState extends State<App> {
   }
 
   Future<void> checkForUpdate() async {
-  if (kIsWeb) return;
+    if (kIsWeb) return;
 
-  final packageInfo = await PackageInfo.fromPlatform();
-  final currentBuild = int.parse(packageInfo.buildNumber);
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentBuild = int.parse(packageInfo.buildNumber);
 
-  try {
-    final response = await Dio().get(
-      'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
-    );
+    try {
+      final response = await Dio().get(
+        'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
+      );
 
-    final data = response.data is String
-        ? jsonDecode(response.data)
-        : response.data;
+      final data = response.data is String
+          ? jsonDecode(response.data)
+          : response.data;
 
-    debugPrint("UPDATE CHECK DATA: $data");
+      debugPrint("UPDATE CHECK DATA: $data");
 
-    final latestBuild = data['build'] as int;
-    final apkUrl = data['apk_url'] as String;
-    final changelog = data['changelog'] as String;
+      final latestBuild = data['build'] as int;
+      final apkUrl = data['apk_url'] as String;
+      final changelog = data['changelog'] as String;
 
-    if (latestBuild > currentBuild) {
-      showUpdateDialog(apkUrl, changelog);
+      if (latestBuild > currentBuild) {
+        showUpdateDialog(apkUrl, changelog);
+      }
+    } catch (e) {
+      debugPrint("UPDATE CHECK ERROR: $e");
     }
-  } catch (e) {
-    debugPrint("UPDATE CHECK ERROR: $e");
   }
-}
 
   Future<void> downloadAndInstall(String url) async {
-    final dir = await getExternalStorageDirectory();
-    final filePath = "${dir!.path}/update.apk";
+    try {
+      debugPrint("DOWNLOAD APK START: $url");
 
-    await Dio().download(url, filePath);
+      final dir = await getApplicationDocumentsDirectory();
+      final filePath = "${dir.path}/update.apk";
 
-    await OpenFile.open(filePath);
+      await Dio().download(url, filePath);
+
+      debugPrint("DOWNLOAD APK FINISHED: $filePath");
+
+      final result = await OpenFile.open(
+        filePath,
+        type: "application/vnd.android.package-archive",
+      );
+
+      debugPrint("OPEN APK RESULT: ${result.type}");
+      debugPrint("OPEN APK MESSAGE: ${result.message}");
+    } catch (e, stack) {
+      debugPrint("DOWNLOAD APK ERROR: $e");
+      debugPrint("$stack");
+    }
   }
 
   void showUpdateDialog(String apkUrl, String changelog) {
