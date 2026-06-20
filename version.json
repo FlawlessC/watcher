@@ -1,7 +1,7 @@
 
    {
-  "version": "1.0.3",
-  "build": 4,
-  "apk_url": "https://github.com/FlawlessC/watcher/releases/download/v1.0.3/app-release.apk",
-  "changelog": "fix auth logic / UI improvements"
+  "version": "1.0.4",
+  "build": 5,
+  "apk_url": "https://github.com/FlawlessC/watcher/releases/download/v1.0.4/app-release.apk",
+  "changelog": "Add app icon and rename app to Watcher"
 }
