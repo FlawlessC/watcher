@@ -22,8 +22,13 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Обязательно передаем опции текущей платформы
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+
   runApp(const MyApp());
 }
 
@@ -164,6 +169,25 @@ class _AppState extends State<App> {
   bool showUpdateBadge = true;
   bool isDownloadingUpdate = false;
   bool isProfileMenuOpen = false;
+  bool collectLogs = false;
+  bool maintenanceMode = false;
+  String maintenanceMessage = '';
+  final List<String> appLogs = [];
+  bool _blockIfMaintenance() {
+    if (!maintenanceMode) return false;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          maintenanceMessage.isEmpty
+              ? 'Проводятся технические работы. Изменения временно недоступны.'
+              : maintenanceMessage,
+        ),
+      ),
+    );
+
+    return true;
+  }
 
   String appVersionLabel = '';
   String progressUnit = 'серия';
@@ -172,6 +196,40 @@ class _AppState extends State<App> {
       selectedFilters.contains('Все') ? 'Все' : selectedFilters.join(', ');
   String searchQuery = "";
   final Set<String> selected = {};
+
+  void addLog(String message) {
+    if (!collectLogs) return;
+
+    final timestamp = DateTime.now().toString().substring(11, 19);
+
+    appLogs.insert(0, "[$timestamp] $message");
+
+    if (appLogs.length > 100) {
+      appLogs.removeLast();
+    }
+  }
+
+  Future<void> checkMaintenanceMode() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('config')
+          .doc('app')
+          .get();
+
+      if (!doc.exists) return;
+
+      final data = doc.data();
+
+      if (!mounted || data == null) return;
+
+      setState(() {
+        maintenanceMode = data['maintenance'] ?? false;
+        maintenanceMessage = data['message'] ?? 'Проводятся технические работы';
+      });
+    } catch (e) {
+      addLog("Ошибка проверки техработ: $e");
+    }
+  }
 
   Future<void> _ensureDefaultCategories() async {
     if (currentUserId.isEmpty) return;
@@ -201,8 +259,17 @@ class _AppState extends State<App> {
     return;
   }
 
-  Future<void> checkForUpdate() async {
-    if (kIsWeb) return;
+  Future<void> checkForUpdate({bool manual = false}) async {
+    if (kIsWeb) {
+      if (manual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Обновления APK доступны только на Android'),
+          ),
+        );
+      }
+      return;
+    }
 
     final packageInfo = await PackageInfo.fromPlatform();
     final currentBuild = int.parse(packageInfo.buildNumber);
@@ -231,6 +298,10 @@ class _AppState extends State<App> {
         });
 
         showUpdateDialog(apkUrl, changelog);
+      } else if (manual && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Установлена актуальная версия')),
+        );
       }
     } catch (e) {
       debugPrint("UPDATE CHECK ERROR: $e");
@@ -250,24 +321,44 @@ class _AppState extends State<App> {
   Future<void> downloadAndInstall(String url) async {
     try {
       debugPrint("DOWNLOAD APK START: $url");
-
+      addLog("Начато скачивание APK");
       final dir = await getApplicationDocumentsDirectory();
       final filePath = "${dir.path}/update.apk";
 
       await Dio().download(url, filePath);
 
       debugPrint("DOWNLOAD APK FINISHED: $filePath");
-
+      addLog("APK скачан");
       final result = await OpenFile.open(
         filePath,
         type: "application/vnd.android.package-archive",
       );
 
       debugPrint("OPEN APK RESULT: ${result.type}");
+      addLog("APK скачан");
       debugPrint("OPEN APK MESSAGE: ${result.message}");
+
+      if (result.type != ResultType.done) {
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Не удалось открыть установщик APK: ${result.message}",
+            ),
+          ),
+        );
+      }
     } catch (e, stack) {
       debugPrint("DOWNLOAD APK ERROR: $e");
+      addLog("Ошибка обновления: $e");
       debugPrint("$stack");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Ошибка обновления: $e")));
     }
   }
 
@@ -356,6 +447,31 @@ class _AppState extends State<App> {
                   setDialogState(() {});
                 },
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text("Собирать логи"),
+                value: collectLogs,
+                onChanged: (value) {
+                  setState(() {
+                    collectLogs = value;
+                  });
+
+                  setDialogState(() {});
+                },
+              ),
+              const SizedBox(height: 8),
+
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    _showLogsDialog();
+                  },
+                  icon: const Icon(Icons.bug_report),
+                  label: const Text("Показать логи"),
+                ),
+              ),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
@@ -375,6 +491,65 @@ class _AppState extends State<App> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogsDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Логи"),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: appLogs.isEmpty
+              ? const Center(child: Text("Логи пусты"))
+              : ListView.builder(
+                  itemCount: appLogs.length,
+                  itemBuilder: (_, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        appLogs[index],
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final logsText = appLogs.join('\n');
+
+              await Clipboard.setData(ClipboardData(text: logsText));
+
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("Логи скопированы")));
+            },
+            child: const Text("Скопировать"),
+          ),
+
+          TextButton(
+            onPressed: () {
+              setState(() {
+                appLogs.clear();
+              });
+
+              Navigator.pop(context);
+            },
+            child: const Text("Очистить"),
+          ),
+
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Закрыть"),
+          ),
+        ],
       ),
     );
   }
@@ -399,12 +574,15 @@ class _AppState extends State<App> {
 
     _loadAppVersion();
 
+    checkMaintenanceMode();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkForUpdate();
     });
   }
 
   void _showAddCategoryDialog() {
+    if (_blockIfMaintenance()) return;
     // Локальный контроллер, не пересекается с полем класса
     final TextEditingController newCatCtrl = TextEditingController();
 
@@ -452,6 +630,7 @@ class _AppState extends State<App> {
 
   // Метод для удаления категории
   void _deleteCategory(String id) {
+    if (_blockIfMaintenance()) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -605,12 +784,13 @@ class _AppState extends State<App> {
 
   // НОВЫЙ метод для обновления существующей записи
   void _updateItem(DocumentSnapshot doc) {
+    if (_blockIfMaintenance()) return;
     if (ctrl.text.isEmpty) return;
 
     bool isArchive = selected.contains('Архив');
     List<String> tagsToSave = List.from(selected);
     tagsToSave.remove('Архив');
-
+    if (_blockIfMaintenance()) return;
     doc.reference.update({
       't': ctrl.text,
       'desc': descCtrl.text,
@@ -630,6 +810,7 @@ class _AppState extends State<App> {
 
   // 1. Метод добавления в базу
   void _add() {
+    if (_blockIfMaintenance()) return;
     if (ctrl.text.isEmpty) return;
 
     // Проверяем, выбран ли статус "Архив"
@@ -660,6 +841,8 @@ class _AppState extends State<App> {
 
   // 2. Окно добавления (выезжает снизу)
   void _showAddItemSheet() {
+    if (_blockIfMaintenance()) return;
+
     ctrl.clear();
     descCtrl.clear();
     currentProgCtrl.clear();
@@ -961,8 +1144,10 @@ class _AppState extends State<App> {
 
       confirmDismiss: (direction) async {
         // Свайп справа налево = удалить
+        if (_blockIfMaintenance()) return false;
         if (direction == DismissDirection.endToStart) {
           HapticFeedback.mediumImpact();
+
           await doc.reference.delete();
 
           return true;
@@ -974,7 +1159,6 @@ class _AppState extends State<App> {
           if (!updatedTags.contains('Архив')) {
             updatedTags.add('Архив');
           }
-
           await doc.reference.update({'done': true, 'tags': updatedTags});
 
           return false;
@@ -1006,6 +1190,7 @@ class _AppState extends State<App> {
               } else {
                 updatedTags.remove('Архив');
               }
+              if (_blockIfMaintenance()) return;
 
               await doc.reference.update({'done': v, 'tags': updatedTags});
 
@@ -1038,6 +1223,7 @@ class _AppState extends State<App> {
 
             onPressed: () async {
               HapticFeedback.mediumImpact();
+              if (_blockIfMaintenance()) return;
               await doc.reference.delete();
             },
           ),
@@ -1229,6 +1415,8 @@ class _AppState extends State<App> {
                     ? const Center(child: Text("Списков пока нет"))
                     : ReorderableListView(
                         onReorder: (oldIdx, newIdx) async {
+                          if (_blockIfMaintenance()) return;
+
                           if (newIdx > oldIdx) newIdx -= 1;
                           final List<DocumentSnapshot> list = List.from(docs);
                           final item = list.removeAt(oldIdx);
@@ -1316,6 +1504,8 @@ class _AppState extends State<App> {
               String newName = editCtrl.text.trim();
               if (newName.isNotEmpty && newName != oldName) {
                 // 1. Обновляем саму категорию
+                if (_blockIfMaintenance()) return;
+
                 await doc.reference.update({'name': newName});
                 HapticFeedback.selectionClick();
                 // 2. Обновляем все задачи, у которых был этот тег
@@ -1486,12 +1676,16 @@ class _AppState extends State<App> {
               builder: (context, snapshot) {
                 final user = snapshot.data;
                 return PopupMenuButton<String>(
-                  icon: user?.photoURL != null
-                      ? CircleAvatar(
-                          backgroundImage: NetworkImage(user!.photoURL!),
-                          radius: 14,
-                        )
-                      : const Icon(Icons.account_circle),
+                  icon: Badge(
+                    isLabelVisible: pendingUpdateUrl != null && showUpdateBadge,
+                    label: const SizedBox(width: 8, height: 8),
+                    child: user?.photoURL != null
+                        ? CircleAvatar(
+                            backgroundImage: NetworkImage(user!.photoURL!),
+                            radius: 14,
+                          )
+                        : const Icon(Icons.account_circle),
+                  ),
                   onSelected: (value) async {
                     if (value == 'random') {
                       final tabs = ['all', 'work', 'archive', 'rewatch'];
@@ -1500,6 +1694,8 @@ class _AppState extends State<App> {
                       _showRandomItem(tabs[currentIdx]);
                     } else if (value == 'settings') {
                       _showSettingsDialog();
+                    } else if (value == 'check_update') {
+                      await checkForUpdate(manual: true);
                     } else if (value == 'update') {
                       if (pendingUpdateUrl != null) {
                         showUpdateDialog(
@@ -1555,17 +1751,13 @@ class _AppState extends State<App> {
                     ),
 
                     if (pendingUpdateUrl != null)
-                      PopupMenuItem(
+                      const PopupMenuItem(
                         value: 'update',
                         child: Row(
                           children: [
-                            Badge(
-                              isLabelVisible: showUpdateBadge,
-                              label: const Text('1'),
-                              child: const Icon(Icons.system_update, size: 18),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text('Обновить приложение'),
+                            Icon(Icons.system_update, size: 18),
+                            SizedBox(width: 12),
+                            Text('Обновить приложение'),
                           ],
                         ),
                       ),
@@ -1580,7 +1772,16 @@ class _AppState extends State<App> {
                         ],
                       ),
                     ),
-
+                    const PopupMenuItem(
+                      value: 'check_update',
+                      child: Row(
+                        children: [
+                          Icon(Icons.refresh, size: 18),
+                          SizedBox(width: 8),
+                          Text('Проверить обновления'),
+                        ],
+                      ),
+                    ),
                     const PopupMenuDivider(),
 
                     const PopupMenuItem(
@@ -1614,19 +1815,44 @@ class _AppState extends State<App> {
           ],
         ),
         drawer: _buildDrawer(),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 700),
+        body: Column(
+          children: [
+            if (maintenanceMode)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                color: Colors.orange.shade700,
+                child: Row(
+                  children: [
+                    const Icon(Icons.build, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        maintenanceMessage,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-            child: TabBarView(
-              children: [
-                _buildItemList(status: 'all'),
-                _buildItemList(status: 'work'),
-                _buildItemList(status: 'archive'),
-                _buildItemList(status: 'rewatch'),
-              ],
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 700),
+
+                  child: TabBarView(
+                    children: [
+                      _buildItemList(status: 'all'),
+                      _buildItemList(status: 'work'),
+                      _buildItemList(status: 'archive'),
+                      _buildItemList(status: 'rewatch'),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddItemSheet,

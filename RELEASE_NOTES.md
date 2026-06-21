@@ -1,8 +1,14 @@
-﻿## Watcher 1.0.6
+﻿## Watcher 1.0.7
 
-Added profile menu improvements, update badge, manual update check, settings screen and APK installation permission fix
+• Profile menu
+• Update badge
+• Manual update check
+• Settings and log collection
+• Maintenance mode
+• Local Firestore cache
+• Fixed APK installation
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.0.6+7
+- App version bumped to 1.0.7+8

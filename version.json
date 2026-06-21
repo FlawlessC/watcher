@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.0.6",
-    "build":  7,
-    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.6/app-release.apk",
-    "changelog":  "Added profile menu improvements, update badge, manual update check, settings screen and APK installation permission fix"
+    "version":  "1.0.7",
+    "build":  8,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.7/app-release.apk",
+    "changelog":  "• Profile menu\n• Update badge\n• Manual update check\n• Settings and log collection\n• Maintenance mode\n• Local Firestore cache\n• Fixed APK installation"
 }

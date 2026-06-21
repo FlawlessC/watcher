@@ -37,7 +37,8 @@ if ($confirm -ne "y") {
     exit
 }
 
-$changelog = Read-Host "App changelog"
+$changelogInput = Read-Host "App changelog. Use \n for new lines"
+$changelog = $changelogInput -replace "\\n", "`n"
 
 if ([string]::IsNullOrWhiteSpace($changelog)) {
     $changelog = "App improvements and fixes"
