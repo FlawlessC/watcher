@@ -46,10 +46,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: build/app/outputs/flutter-apk/app-release.apk
-          body: |
-            ## Watcher 1.0.5
-
-            - Added final app icon
-            - Updated Web version
-            - Updated Android APK
-            - Improved update installation flow
+          body_path: RELEASE_NOTES.md

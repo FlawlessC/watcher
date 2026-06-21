@@ -157,7 +157,15 @@ class _AppState extends State<App> {
   final TextEditingController descCtrl = TextEditingController();
   final TextEditingController currentProgCtrl = TextEditingController();
   final TextEditingController totalProgCtrl = TextEditingController();
+  String? pendingUpdateUrl;
+  String? pendingUpdateChangelog;
+  String? pendingUpdateVersion;
 
+  bool showUpdateBadge = true;
+  bool isDownloadingUpdate = false;
+  bool isProfileMenuOpen = false;
+
+  String appVersionLabel = '';
   String progressUnit = 'серия';
   List<String> selectedFilters = ['Все'];
   String get filter =>
@@ -213,13 +221,30 @@ class _AppState extends State<App> {
       final latestBuild = data['build'] as int;
       final apkUrl = data['apk_url'] as String;
       final changelog = data['changelog'] as String;
+      final latestVersion = data['version'] as String;
 
       if (latestBuild > currentBuild) {
+        setState(() {
+          pendingUpdateUrl = apkUrl;
+          pendingUpdateChangelog = changelog;
+          pendingUpdateVersion = latestVersion;
+        });
+
         showUpdateDialog(apkUrl, changelog);
       }
     } catch (e) {
       debugPrint("UPDATE CHECK ERROR: $e");
     }
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    if (!mounted) return;
+
+    setState(() {
+      appVersionLabel = '${packageInfo.version}+${packageInfo.buildNumber}';
+    });
   }
 
   Future<void> downloadAndInstall(String url) async {
@@ -247,23 +272,109 @@ class _AppState extends State<App> {
   }
 
   void showUpdateDialog(String apkUrl, String changelog) {
+    bool downloading = false;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Доступно обновление"),
-        content: Text(changelog),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Позже"),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(
+            pendingUpdateVersion == null
+                ? "Доступно обновление"
+                : "Доступно обновление $pendingUpdateVersion",
           ),
-          TextButton(
-            onPressed: () {
-              downloadAndInstall(apkUrl);
-            },
-            child: const Text("Обновить"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(changelog),
+              if (downloading) ...[
+                const SizedBox(height: 16),
+                const LinearProgressIndicator(),
+                const SizedBox(height: 8),
+                const Text("Скачиваю APK..."),
+              ],
+            ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: downloading
+                  ? null
+                  : () => Navigator.pop(dialogContext),
+              child: const Text("Позже"),
+            ),
+            TextButton(
+              onPressed: downloading
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        downloading = true;
+                      });
+
+                      setState(() {
+                        isDownloadingUpdate = true;
+                      });
+
+                      await downloadAndInstall(apkUrl);
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        isDownloadingUpdate = false;
+                      });
+
+                      setDialogState(() {
+                        downloading = false;
+                      });
+                    },
+              child: const Text("Обновить"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text("Настройки"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text("Показывать уведомление об обновлении"),
+                value: showUpdateBadge,
+                onChanged: (value) {
+                  setState(() {
+                    showUpdateBadge = value;
+                  });
+
+                  setDialogState(() {});
+                },
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  appVersionLabel.isEmpty
+                      ? "Версия: ..."
+                      : "Версия: $appVersionLabel",
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Закрыть"),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -285,6 +396,8 @@ class _AppState extends State<App> {
     _ensureDefaultCategories();
 
     _handleWebRedirectResult();
+
+    _loadAppVersion();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkForUpdate();
@@ -1356,18 +1469,7 @@ class _AppState extends State<App> {
             ],
           ),
           actions: [
-            // Исправленный вызов рандома (Пункт 1)
-            Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.casino_outlined),
-                onPressed: () {
-                  // Определяем текущий статус по индексу таба
-                  final tabs = ['all', 'work', 'archive', 'rewatch'];
-                  final currentIdx = DefaultTabController.of(context).index;
-                  _showRandomItem(tabs[currentIdx]);
-                },
-              ),
-            ),
+            // Исправленный вызов рандома (Пункт 1
             IconButton(
               icon: Icon(
                 themeNotifier.value == ThemeMode.light
@@ -1391,7 +1493,21 @@ class _AppState extends State<App> {
                         )
                       : const Icon(Icons.account_circle),
                   onSelected: (value) async {
-                    if (value == 'switch') {
+                    if (value == 'random') {
+                      final tabs = ['all', 'work', 'archive', 'rewatch'];
+                      final currentIdx = DefaultTabController.of(context).index;
+
+                      _showRandomItem(tabs[currentIdx]);
+                    } else if (value == 'settings') {
+                      _showSettingsDialog();
+                    } else if (value == 'update') {
+                      if (pendingUpdateUrl != null) {
+                        showUpdateDialog(
+                          pendingUpdateUrl!,
+                          pendingUpdateChangelog ?? '',
+                        );
+                      }
+                    } else if (value == 'switch') {
                       await FirebaseAuth.instance.signOut();
                     } else if (value == 'logout') {
                       await FirebaseAuth.instance.signOut();
@@ -1414,10 +1530,59 @@ class _AppState extends State<App> {
                               color: Colors.grey,
                             ),
                           ),
+                          if (appVersionLabel.isNotEmpty)
+                            Text(
+                              'Версия $appVersionLabel',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
                           const Divider(),
                         ],
                       ),
                     ),
+
+                    const PopupMenuItem(
+                      value: 'random',
+                      child: Row(
+                        children: [
+                          Icon(Icons.casino, size: 18),
+                          SizedBox(width: 8),
+                          Text('Рандом'),
+                        ],
+                      ),
+                    ),
+
+                    if (pendingUpdateUrl != null)
+                      PopupMenuItem(
+                        value: 'update',
+                        child: Row(
+                          children: [
+                            Badge(
+                              isLabelVisible: showUpdateBadge,
+                              label: const Text('1'),
+                              child: const Icon(Icons.system_update, size: 18),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('Обновить приложение'),
+                          ],
+                        ),
+                      ),
+
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(Icons.settings, size: 18),
+                          SizedBox(width: 8),
+                          Text('Настройки'),
+                        ],
+                      ),
+                    ),
+
+                    const PopupMenuDivider(),
+
                     const PopupMenuItem(
                       value: 'switch',
                       child: Row(
@@ -1428,6 +1593,7 @@ class _AppState extends State<App> {
                         ],
                       ),
                     ),
+
                     const PopupMenuItem(
                       value: 'logout',
                       child: Row(

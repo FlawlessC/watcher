@@ -1,6 +1,6 @@
-{
-  "version": "1.0.5",
-  "build": 6,
-  "apk_url": "https://github.com/FlawlessC/watcher/releases/download/v1.0.5/app-release.apk",
-  "changelog": "Final app icon\nWeb version updated\nAndroid update flow improved"
+﻿{
+    "version":  "1.0.6",
+    "build":  7,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.6/app-release.apk",
+    "changelog":  "Added profile menu improvements, update badge, manual update check, settings screen and APK installation permission fix"
 }
