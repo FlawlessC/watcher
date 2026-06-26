@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.0.9",
-    "build":  10,
-    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.9/app-release.apk",
-    "changelog":  "Fix realeses"
+    "version":  "1.0.10",
+    "build":  11,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.10/app-release.apk",
+    "changelog":  "• New Watcher welcome screen \n• Adaptive desktop and mobile backgrounds \n• Improved login experience \n• Authentication UI prepared for future sign-in methods \n• Stability improvements and internal fixes"
 }

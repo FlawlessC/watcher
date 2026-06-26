@@ -124,24 +124,122 @@ class SignInScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWide = size.width > 700;
+
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.auto_stories, size: 100, color: Colors.indigo),
-            const SizedBox(height: 20),
-            const Text(
-              "Мой Список",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            isWide
+                ? 'assets/login_bg_desktop.png'
+                : 'assets/login_bg_mobile.png',
+            fit: BoxFit.cover,
+          ),
+
+          Container(color: Colors.black.withValues(alpha: 0.25)),
+
+          Center(
+            child: Transform.translate(
+              offset: Offset(0, isWide ? -30 : -20),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        "W A T C H E R",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 8,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      Container(height: 1, width: 260, color: Colors.redAccent),
+
+                      const SizedBox(height: 34),
+
+                      _loginButton(
+                        icon: Icons.g_mobiledata,
+                        text: "Войти через Google",
+                        onPressed: _signInWithGoogle,
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _loginButton(
+                        icon: Icons.mail_outline,
+                        text: "Войти по email",
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Email-вход добавим следующим шагом",
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _loginButton(
+                        icon: Icons.person_outline,
+                        text: "Продолжить как гость",
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Гостевой вход добавим следующим шагом",
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 40),
-            FilledButton.icon(
-              icon: const Icon(Icons.login),
-              label: const Text("Войти через Google"),
-              onPressed: _signInWithGoogle, // Теперь кнопка увидит метод
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _loginButton({
+    required IconData icon,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
+        label: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.65)),
+          backgroundColor: Colors.black.withValues(alpha: 0.45),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
@@ -166,6 +264,12 @@ class _AppState extends State<App> {
   String? pendingUpdateChangelog;
   String? pendingUpdateVersion;
 
+  static const MethodChannel _installPermissionChannel = MethodChannel(
+    'watcher/install_permission',
+  );
+
+  String? pendingInstallPermissionUrl;
+  bool waitingInstallPermission = false;
   bool showUpdateBadge = true;
   bool isDownloadingUpdate = false;
   bool isProfileMenuOpen = false;
@@ -196,6 +300,58 @@ class _AppState extends State<App> {
       selectedFilters.contains('Все') ? 'Все' : selectedFilters.join(', ');
   String searchQuery = "";
   final Set<String> selected = {};
+  Future<bool> _canRequestInstallPackages() async {
+    if (kIsWeb) return false;
+
+    try {
+      final result = await _installPermissionChannel.invokeMethod<bool>(
+        'canRequestInstallPackages',
+      );
+
+      return result ?? false;
+    } catch (e) {
+      addLog("Ошибка проверки разрешения установки APK: $e");
+      return false;
+    }
+  }
+
+  Future<void> _openInstallPermissionSettings() async {
+    try {
+      await _installPermissionChannel.invokeMethod(
+        'openInstallPermissionSettings',
+      );
+    } catch (e) {
+      addLog("Ошибка открытия настроек установки APK: $e");
+    }
+  }
+
+  void _showInstallPermissionDialog(String apkUrl) {
+    pendingInstallPermissionUrl = apkUrl;
+    waitingInstallPermission = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Нужно разрешение"),
+        content: const Text(
+          "Для обновления разрешите установку APK из Watcher.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text("Позже"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _openInstallPermissionSettings();
+            },
+            child: const Text("Открыть настройки"),
+          ),
+        ],
+      ),
+    );
+  }
 
   void addLog(String message) {
     if (!collectLogs) return;
@@ -398,6 +554,13 @@ class _AppState extends State<App> {
               onPressed: downloading
                   ? null
                   : () async {
+                      final canInstall = await _canRequestInstallPackages();
+
+                      if (!canInstall) {
+                        _showInstallPermissionDialog(apkUrl);
+                        return;
+                      }
+
                       setDialogState(() {
                         downloading = true;
                       });
@@ -928,7 +1091,16 @@ class _AppState extends State<App> {
                       onChanged: (val) =>
                           setSheetState(() => progressUnit = val!),
                       items:
-                          ['серия', 'стр', 'гл', 'книга', 'сезон', 'часов', '-']
+                          [
+                                'серия',
+                                'стр',
+                                'гл',
+                                'книга',
+                                'сезон',
+                                'часов',
+                                '-',
+                                'ачивок',
+                              ]
                               .map(
                                 (v) =>
                                     DropdownMenuItem(value: v, child: Text(v)),
