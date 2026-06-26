@@ -1,12 +1,8 @@
-﻿## Watcher 1.0.8
+﻿## Watcher 1.0.9
 
-• Release APK signing configured 
-• GitHub Actions signing support 
-• Firebase release certificate updated 
-• Improved release automation 
-• Internal fixes and stability improvements
+Fix realeses
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.0.8+9
+- App version bumped to 1.0.9+10
