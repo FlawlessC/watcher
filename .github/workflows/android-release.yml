@@ -50,7 +50,7 @@ jobs:
         run: flutter build web --pwa-strategy=none
 
       - name: Deploy Web to Firebase Hosting
-        run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
+        run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" || true
 
       - name: Upload APK to GitHub Release
         uses: softprops/action-gh-release@v2
