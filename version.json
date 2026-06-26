@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.0.7",
-    "build":  8,
-    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.7/app-release.apk",
-    "changelog":  "• Profile menu\n• Update badge\n• Manual update check\n• Settings and log collection\n• Maintenance mode\n• Local Firestore cache\n• Fixed APK installation"
+    "version":  "1.0.8",
+    "build":  9,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.0.8/app-release.apk",
+    "changelog":  "• Release APK signing configured \n• GitHub Actions signing support \n• Firebase release certificate updated \n• Improved release automation \n• Internal fixes and stability improvements"
 }

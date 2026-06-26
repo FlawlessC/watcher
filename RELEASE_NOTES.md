@@ -1,14 +1,12 @@
-﻿## Watcher 1.0.7
+﻿## Watcher 1.0.8
 
-• Profile menu
-• Update badge
-• Manual update check
-• Settings and log collection
-• Maintenance mode
-• Local Firestore cache
-• Fixed APK installation
+• Release APK signing configured 
+• GitHub Actions signing support 
+• Firebase release certificate updated 
+• Improved release automation 
+• Internal fixes and stability improvements
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.0.7+8
+- App version bumped to 1.0.8+9
