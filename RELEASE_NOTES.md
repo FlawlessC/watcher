@@ -1,14 +1,20 @@
-﻿## Watcher 1.0.11
+﻿## Watcher 1.1.0
 
-• Redesigned authentication flow 
-• Added email/password sign-in and registration 
-• Added password reset screen 
-• Added guest sign-in foundation 
-• Added user profile service foundation 
-• Improved login screen structure 
-• Internal refactoring and stability improvements
+• Complete Settings section redesign
+ • Account page with editable profile
+ • Unique Watcher ID for every user
+ • Firestore user profiles (users collection)
+ • Persistent guest accounts
+ • Editable display name
+ • Editable profile email
+ • Copy Watcher ID and username
+ • Separate Notifications, Logs and Feedback pages
+**Improved:**
+ • Project structure and settings architecture
+**Fixed:**
+ • Various bugs and stability improvements
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.0.11+12
+- App version bumped to 1.1.0+13

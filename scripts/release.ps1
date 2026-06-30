@@ -20,10 +20,29 @@ $minor = [int]$Matches[2]
 $patch = [int]$Matches[3]
 $build = [int]$Matches[4]
 
-$newPatch = $patch + 1
+$releaseType = Read-Host "Release type: patch / minor / major"
+
 $newBuild = $build + 1
 
-$newVersion = "$major.$minor.$newPatch"
+switch ($releaseType) {
+    "major" {
+        $major = $major + 1
+        $minor = 0
+        $patch = 0
+    }
+    "minor" {
+        $minor = $minor + 1
+        $patch = 0
+    }
+    "patch" {
+        $patch = $patch + 1
+    }
+    default {
+        throw "Unknown release type. Use: patch, minor, or major"
+    }
+}
+
+$newVersion = "$major.$minor.$patch"
 $newFullVersion = "$newVersion+$newBuild"
 $newTag = "v$newVersion"
 

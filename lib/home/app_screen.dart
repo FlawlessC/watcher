@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import '../settings/settings_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,8 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:open_file/open_file.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-
+import '../services/user_profile_service.dart';
 import '../core/app_globals.dart';
+import '../settings/account_screen.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -355,130 +356,33 @@ class _AppState extends State<App> {
     );
   }
 
-  void _showSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text("Настройки"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text("Показывать уведомление об обновлении"),
-                value: showUpdateBadge,
-                onChanged: (value) {
-                  setState(() {
-                    showUpdateBadge = value;
-                  });
+  void _openSettingsScreen({String initialSection = 'main'}) {
+    if (initialSection == 'account') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const AccountScreen()),
+      );
+      return;
+    }
 
-                  setDialogState(() {});
-                },
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text("Собирать логи"),
-                value: collectLogs,
-                onChanged: (value) {
-                  setState(() {
-                    collectLogs = value;
-                  });
-
-                  setDialogState(() {});
-                },
-              ),
-              const SizedBox(height: 8),
-
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Navigator.pop(dialogContext);
-                    _showLogsDialog();
-                  },
-                  icon: const Icon(Icons.bug_report),
-                  label: const Text("Показать логи"),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  appVersionLabel.isEmpty
-                      ? "Версия: ..."
-                      : "Версия: $appVersionLabel",
-                  style: const TextStyle(color: Colors.grey),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text("Закрыть"),
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(
+          initialSection: initialSection,
+          collectLogs: collectLogs,
+          appLogs: appLogs,
+          onCollectLogsChanged: (value) {
+            setState(() => collectLogs = value);
+          },
+          onClearLogs: () {
+            setState(() => appLogs.clear());
+          },
+          showUpdateBadge: showUpdateBadge,
+          onShowUpdateBadgeChanged: (value) {
+            setState(() => showUpdateBadge = value);
+          },
         ),
-      ),
-    );
-  }
-
-  void _showLogsDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Логи"),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: appLogs.isEmpty
-              ? const Center(child: Text("Логи пусты"))
-              : ListView.builder(
-                  itemCount: appLogs.length,
-                  itemBuilder: (_, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text(
-                        appLogs[index],
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final logsText = appLogs.join('\n');
-
-              await Clipboard.setData(ClipboardData(text: logsText));
-
-              if (!mounted) return;
-
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text("Логи скопированы")));
-            },
-            child: const Text("Скопировать"),
-          ),
-
-          TextButton(
-            onPressed: () {
-              setState(() {
-                appLogs.clear();
-              });
-
-              Navigator.pop(context);
-            },
-            child: const Text("Очистить"),
-          ),
-
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Закрыть"),
-          ),
-        ],
       ),
     );
   }
@@ -1613,142 +1517,174 @@ class _AppState extends State<App> {
               stream: FirebaseAuth.instance.authStateChanges(),
               builder: (context, snapshot) {
                 final user = snapshot.data;
-                return PopupMenuButton<String>(
-                  icon: Badge(
-                    isLabelVisible: pendingUpdateUrl != null && showUpdateBadge,
-                    label: const SizedBox(width: 8, height: 8),
-                    child: user?.photoURL != null
-                        ? CircleAvatar(
-                            backgroundImage: NetworkImage(user!.photoURL!),
-                            radius: 14,
-                          )
-                        : const Icon(Icons.account_circle),
-                  ),
-                  onSelected: (value) async {
-                    if (value == 'random') {
-                      final tabs = ['all', 'work', 'archive', 'rewatch'];
-                      final currentIdx = DefaultTabController.of(context).index;
+                return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                  stream: user == null
+                      ? null
+                      : FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .snapshots(),
+                  builder: (context, profileSnapshot) {
+                    final profile = profileSnapshot.data?.data();
 
-                      _showRandomItem(tabs[currentIdx]);
-                    } else if (value == 'settings') {
-                      _showSettingsDialog();
-                    } else if (value == 'check_update') {
-                      await checkForUpdate(manual: true);
-                    } else if (value == 'update') {
-                      if (pendingUpdateUrl != null) {
-                        showUpdateDialog(
-                          pendingUpdateUrl!,
-                          pendingUpdateChangelog ?? '',
-                        );
-                      }
-                    } else if (value == 'switch') {
-                      await FirebaseAuth.instance.signOut();
-                    } else if (value == 'logout') {
-                      await FirebaseAuth.instance.signOut();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      enabled: false,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.displayName ??
-                                user?.email?.split('@').first ??
-                                'Без имени',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            user?.email ?? '',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          if (appVersionLabel.isNotEmpty)
-                            Text(
-                              'Версия $appVersionLabel',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
+                    final profileName = profile?['displayName']?.toString();
+                    final profileEmail = profile?['email']?.toString();
+                    final shownName = profileName?.trim().isNotEmpty == true
+                        ? profileName!.trim()
+                        : UserProfileService.instance.fallbackName(user);
+
+                    final shownEmail = profileEmail?.trim().isNotEmpty == true
+                        ? profileEmail!.trim()
+                        : user?.email ?? '';
+
+                    return PopupMenuButton<String>(
+                      icon: Badge(
+                        isLabelVisible:
+                            pendingUpdateUrl != null && showUpdateBadge,
+                        label: const SizedBox(width: 8, height: 8),
+                        child: user?.photoURL != null
+                            ? CircleAvatar(
+                                backgroundImage: NetworkImage(user!.photoURL!),
+                                radius: 14,
+                              )
+                            : const Icon(Icons.account_circle),
+                      ),
+                      onSelected: (value) async {
+                        if (value == 'random') {
+                          final tabs = ['all', 'work', 'archive', 'rewatch'];
+                          final currentIdx = DefaultTabController.of(
+                            context,
+                          ).index;
+
+                          _showRandomItem(tabs[currentIdx]);
+                        } else if (value == 'account') {
+                          _openSettingsScreen(initialSection: 'account');
+                        } else if (value == 'settings') {
+                          _openSettingsScreen();
+                        } else if (value == 'check_update') {
+                          await checkForUpdate(manual: true);
+                        } else if (value == 'update') {
+                          if (pendingUpdateUrl != null) {
+                            showUpdateDialog(
+                              pendingUpdateUrl!,
+                              pendingUpdateChangelog ?? '',
+                            );
+                          }
+                        } else if (value == 'switch') {
+                          await FirebaseAuth.instance.signOut();
+                        } else if (value == 'logout') {
+                          await FirebaseAuth.instance.signOut();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'account',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                shownName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          const Divider(),
-                        ],
-                      ),
-                    ),
-
-                    const PopupMenuItem(
-                      value: 'random',
-                      child: Row(
-                        children: [
-                          Icon(Icons.casino, size: 18),
-                          SizedBox(width: 8),
-                          Text('Рандом'),
-                        ],
-                      ),
-                    ),
-
-                    if (pendingUpdateUrl != null)
-                      const PopupMenuItem(
-                        value: 'update',
-                        child: Row(
-                          children: [
-                            Icon(Icons.system_update, size: 18),
-                            SizedBox(width: 12),
-                            Text('Обновить приложение'),
-                          ],
-                        ),
-                      ),
-
-                    const PopupMenuItem(
-                      value: 'settings',
-                      child: Row(
-                        children: [
-                          Icon(Icons.settings, size: 18),
-                          SizedBox(width: 8),
-                          Text('Настройки'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'check_update',
-                      child: Row(
-                        children: [
-                          Icon(Icons.refresh, size: 18),
-                          SizedBox(width: 8),
-                          Text('Проверить обновления'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(),
-
-                    const PopupMenuItem(
-                      value: 'switch',
-                      child: Row(
-                        children: [
-                          Icon(Icons.swap_horiz, size: 18),
-                          SizedBox(width: 8),
-                          Text('Сменить аккаунт'),
-                        ],
-                      ),
-                    ),
-
-                    const PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout, size: 18, color: Colors.redAccent),
-                          SizedBox(width: 8),
-                          Text(
-                            'Выйти',
-                            style: TextStyle(color: Colors.redAccent),
+                              if (shownEmail.isNotEmpty)
+                                Text(
+                                  shownEmail,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              if (appVersionLabel.isNotEmpty)
+                                Text(
+                                  'Версия $appVersionLabel',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              const Divider(),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
+                        ),
+
+                        const PopupMenuItem(
+                          value: 'random',
+                          child: Row(
+                            children: [
+                              Icon(Icons.casino, size: 18),
+                              SizedBox(width: 8),
+                              Text('Рандом'),
+                            ],
+                          ),
+                        ),
+
+                        if (pendingUpdateUrl != null)
+                          const PopupMenuItem(
+                            value: 'update',
+                            child: Row(
+                              children: [
+                                Icon(Icons.system_update, size: 18),
+                                SizedBox(width: 12),
+                                Text('Обновить приложение'),
+                              ],
+                            ),
+                          ),
+
+                        const PopupMenuItem(
+                          value: 'settings',
+                          child: Row(
+                            children: [
+                              Icon(Icons.settings, size: 18),
+                              SizedBox(width: 8),
+                              Text('Настройки'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'check_update',
+                          child: Row(
+                            children: [
+                              Icon(Icons.refresh, size: 18),
+                              SizedBox(width: 8),
+                              Text('Проверить обновления'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+
+                        const PopupMenuItem(
+                          value: 'switch',
+                          child: Row(
+                            children: [
+                              Icon(Icons.swap_horiz, size: 18),
+                              SizedBox(width: 8),
+                              Text('Сменить аккаунт'),
+                            ],
+                          ),
+                        ),
+
+                        const PopupMenuItem(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.logout,
+                                size: 18,
+                                color: Colors.redAccent,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Выйти',
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 );
               },
             ),

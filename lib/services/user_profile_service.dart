@@ -12,6 +12,10 @@ class UserProfileService {
   String fallbackName(User? user) {
     if (user == null) return 'Без имени';
 
+    if (user.isAnonymous) {
+      return 'Гость';
+    }
+
     final displayName = user.displayName?.trim();
     if (displayName != null && displayName.isNotEmpty) {
       return displayName;
@@ -22,60 +26,123 @@ class UserProfileService {
       return email.split('@').first;
     }
 
-    if (user.isAnonymous) {
-      return 'Гость';
-    }
-
     return 'Без имени';
   }
 
   Future<void> ensureUserProfile(User user, {required String provider}) async {
     final userRef = _firestore.collection('users').doc(user.uid);
-    final existingUser = await userRef.get();
+    final countersRef = _firestore.collection('config').doc('counters');
 
-    if (existingUser.exists) {
-      await userRef.set({
-        'email': user.email,
-        'displayName': user.displayName,
-        'isAnonymous': user.isAnonymous,
-        'lastLoginAt': FieldValue.serverTimestamp(),
+    await _firestore.runTransaction((transaction) async {
+      final existingUser = await transaction.get(userRef);
+
+      if (existingUser.exists) {
+        transaction.set(userRef, {
+          'email': user.email,
+          'provider': provider,
+          'isAnonymous': user.isAnonymous,
+          'lastLoginAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        return;
+      }
+
+      final countersSnap = await transaction.get(countersRef);
+      final countersData = countersSnap.data();
+
+      final currentNumber =
+          (countersData?['lastAccountNumber'] as int?) ?? 100000;
+      final accountNumber = currentNumber + 1;
+
+      transaction.set(countersRef, {
+        'lastAccountNumber': accountNumber,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      return;
-    }
 
-    final baseUsername = _buildBaseUsername(user);
-    final safeUsername = await _reserveUniqueUsername(
-      uid: user.uid,
-      baseUsername: baseUsername,
-    );
+      final baseUsername = user.isAnonymous
+          ? 'guest$accountNumber'
+          : _buildBaseUsername(user);
 
-    await userRef.set({
-      'uid': user.uid,
-      'username': safeUsername,
-      'usernameLower': safeUsername.toLowerCase(),
-      'email': user.email,
-      'displayName': user.displayName,
-      'provider': provider,
-      'isAnonymous': user.isAnonymous,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-      'lastLoginAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      final safeUsername = _sanitizeUsername(baseUsername);
+      final displayName = user.isAnonymous
+          ? 'Гость $accountNumber'
+          : _buildDisplayName(user, safeUsername);
+
+      final usernameRef =
+          _firestore.collection('usernames').doc(safeUsername.toLowerCase());
+
+      transaction.set(usernameRef, {
+        'uid': user.uid,
+        'username': safeUsername,
+        'accountNumber': accountNumber,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      transaction.set(userRef, {
+        'uid': user.uid,
+        'accountNumber': accountNumber,
+        'username': safeUsername,
+        'usernameLower': safeUsername.toLowerCase(),
+        'displayName': displayName,
+        'email': user.email,
+        'provider': provider,
+        'isAnonymous': user.isAnonymous,
+        'photoUrl': user.photoURL,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastLoginAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }).catchError((e) async {
+      debugPrint('ENSURE USER PROFILE ERROR: $e');
+
+      if (!user.isAnonymous) {
+        final fallbackUsername = await _reserveUniqueUsername(
+          uid: user.uid,
+          baseUsername: _buildBaseUsername(user),
+        );
+
+        await userRef.set({
+          'uid': user.uid,
+          'username': fallbackUsername,
+          'usernameLower': fallbackUsername.toLowerCase(),
+          'displayName': _buildDisplayName(user, fallbackUsername),
+          'email': user.email,
+          'provider': provider,
+          'isAnonymous': user.isAnonymous,
+          'photoUrl': user.photoURL,
+          'updatedAt': FieldValue.serverTimestamp(),
+          'lastLoginAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    });
   }
 
   String _buildBaseUsername(User user) {
-    final fromDisplayName = user.displayName?.trim();
-    if (fromDisplayName != null && fromDisplayName.isNotEmpty) {
-      return _sanitizeUsername(fromDisplayName);
-    }
-
     final email = user.email?.trim();
     if (email != null && email.isNotEmpty) {
       return _sanitizeUsername(email.split('@').first);
     }
 
-    return 'guest_${user.uid.substring(0, 6)}';
+    final fromDisplayName = user.displayName?.trim();
+    if (fromDisplayName != null && fromDisplayName.isNotEmpty) {
+      return _sanitizeUsername(fromDisplayName);
+    }
+
+    return 'user';
+  }
+
+  String _buildDisplayName(User user, String username) {
+    final displayName = user.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    final email = user.email?.trim();
+    if (email != null && email.isNotEmpty) {
+      return email.split('@').first;
+    }
+
+    return username;
   }
 
   String _sanitizeUsername(String value) {
@@ -86,6 +153,7 @@ class UserProfileService {
         .replaceAll(RegExp(r'_+'), '_')
         .replaceAll(RegExp(r'^_+|_+$'), '');
 
+    if (normalized.isEmpty) return 'user';
     if (normalized.length < 3) return 'user_$normalized';
     if (normalized.length > 24) return normalized.substring(0, 24);
     return normalized;
@@ -95,7 +163,7 @@ class UserProfileService {
     required String uid,
     required String baseUsername,
   }) async {
-    final base = baseUsername.toLowerCase();
+    final base = _sanitizeUsername(baseUsername).toLowerCase();
 
     final candidates = <String>[
       base,
@@ -107,7 +175,8 @@ class UserProfileService {
       final usernameRef = _firestore.collection('usernames').doc(candidate);
 
       try {
-        final reserved = await _firestore.runTransaction<bool>((transaction) async {
+        final reserved =
+            await _firestore.runTransaction<bool>((transaction) async {
           final snapshot = await transaction.get(usernameRef);
 
           if (snapshot.exists) {

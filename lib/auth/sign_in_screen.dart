@@ -22,6 +22,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final repeatPasswordController = TextEditingController();
 
   bool loading = false;
+  String? loadingAction;
   bool obscurePassword = true;
 
   @override
@@ -33,7 +34,10 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      loadingAction = 'google';
+    });
 
     try {
       await AuthService.instance.signInWithGoogle();
@@ -47,7 +51,12 @@ class _SignInScreenState extends State<SignInScreen> {
         const SnackBar(content: Text('Не удалось войти через Google')),
       );
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) {
+        setState(() {
+          loading = false;
+          loadingAction = null;
+        });
+      }
     }
   }
 
@@ -112,7 +121,10 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _signInAsGuest() async {
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      loadingAction = 'guest';
+    });
 
     try {
       await AuthService.instance.signInAnonymously();
@@ -127,6 +139,7 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       authMode = AuthViewMode.emailLogin;
       loading = false;
+      loadingAction = null;
       obscurePassword = true;
       passwordController.clear();
       repeatPasswordController.clear();
@@ -137,6 +150,7 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       authMode = AuthViewMode.emailRegister;
       loading = false;
+      loadingAction = null;
       obscurePassword = true;
       passwordController.clear();
       repeatPasswordController.clear();
@@ -147,6 +161,7 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       authMode = AuthViewMode.passwordReset;
       loading = false;
+      loadingAction = null;
       passwordController.clear();
       repeatPasswordController.clear();
     });
@@ -156,6 +171,7 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       authMode = AuthViewMode.main;
       loading = false;
+      loadingAction = null;
       obscurePassword = true;
       emailController.clear();
       passwordController.clear();
@@ -166,9 +182,9 @@ class _SignInScreenState extends State<SignInScreen> {
   void _showSnack(String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _authErrorMessage(FirebaseAuthException e) {
@@ -226,7 +242,7 @@ class _SignInScreenState extends State<SignInScreen> {
             },
             child: Center(
               child: Transform.translate(
-                offset: Offset(0, isWide ? -45 : -35),
+                offset: Offset(0, isWide ? -45 : 25),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 430),
                   child: Padding(
@@ -268,25 +284,31 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Widget _buildMainMenu() {
+    final isLoading = loadingAction != null;
+
     return Column(
       key: const ValueKey('main-menu'),
       children: [
         LoginButton(
           icon: Icons.g_mobiledata,
-          text: loading ? 'Подождите...' : 'Войти через Google',
-          onPressed: loading ? null : _signInWithGoogle,
+          text: loadingAction == 'google'
+              ? 'Подождите...'
+              : 'Войти через Google',
+          onPressed: isLoading ? null : _signInWithGoogle,
         ),
         const SizedBox(height: 12),
         LoginButton(
           icon: Icons.mail_outline,
           text: 'Войти по email',
-          onPressed: loading ? null : _openEmailLogin,
+          onPressed: isLoading ? null : _openEmailLogin,
         ),
         const SizedBox(height: 12),
         LoginButton(
           icon: Icons.person_outline,
-          text: loading ? 'Подождите...' : 'Продолжить как гость',
-          onPressed: loading ? null : _signInAsGuest,
+          text: loadingAction == 'guest'
+              ? 'Подождите...'
+              : 'Продолжить как гость',
+          onPressed: isLoading ? null : _signInAsGuest,
         ),
       ],
     );
@@ -325,8 +347,8 @@ class _SignInScreenState extends State<SignInScreen> {
           text: loading
               ? 'Подождите...'
               : isRegister
-                  ? 'Создать аккаунт'
-                  : 'Войти',
+              ? 'Создать аккаунт'
+              : 'Войти',
           onPressed: loading ? null : _submitEmailAuth,
         ),
         if (!isRegister)
@@ -342,8 +364,8 @@ class _SignInScreenState extends State<SignInScreen> {
           onPressed: loading
               ? null
               : isRegister
-                  ? _openEmailLogin
-                  : _openEmailRegister,
+              ? _openEmailLogin
+              : _openEmailRegister,
           child: Text(
             isRegister ? 'Уже есть аккаунт' : 'Создать аккаунт',
             style: const TextStyle(color: Colors.white70),
@@ -352,10 +374,7 @@ class _SignInScreenState extends State<SignInScreen> {
         TextButton.icon(
           onPressed: loading ? null : _backToMain,
           icon: const Icon(Icons.arrow_back, color: Colors.white70),
-          label: const Text(
-            'Назад',
-            style: TextStyle(color: Colors.white70),
-          ),
+          label: const Text('Назад', style: TextStyle(color: Colors.white70)),
         ),
       ],
     );
