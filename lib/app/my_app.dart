@@ -15,13 +15,20 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Watcher',
           debugShowCheckedModeBanner: false,
+
           themeMode: currentMode,
+
+          themeAnimationDuration: const Duration(milliseconds: 450),
+          themeAnimationCurve: Curves.easeInOutCubic,
+
           theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
+
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
             colorSchemeSeed: Colors.indigo,
           ),
+
           home: const AuthGate(),
         );
       },

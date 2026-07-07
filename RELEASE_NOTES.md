@@ -1,20 +1,19 @@
-﻿## Watcher 1.1.0
+﻿## Watcher 1.1.1
 
-• Complete Settings section redesign
- • Account page with editable profile
- • Unique Watcher ID for every user
- • Firestore user profiles (users collection)
- • Persistent guest accounts
- • Editable display name
- • Editable profile email
- • Copy Watcher ID and username
- • Separate Notifications, Logs and Feedback pages
-**Improved:**
- • Project structure and settings architecture
-**Fixed:**
- • Various bugs and stability improvements
+• Redesigned account management with dedicated sections.
+• Added account information, profile, security, and authentication pages.
+• Introduced editable profile fields and copyable account details.
+• Added account logout confirmation.
+• Added delayed account deletion with recovery period.
+• Added in-app update notifications.
+• Added log collection settings and log viewer.
+• Added feedback section.
+• Improved settings navigation and overall UI.
+• Improved adaptive layouts for Android, Web, and Desktop.
+• Improved theme switching animation.
+• Various bug fixes and performance improvements.
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.1.0+13
+- App version bumped to 1.1.1+14

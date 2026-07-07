@@ -11,7 +11,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/user_profile_service.dart';
 import '../core/app_globals.dart';
-import '../settings/account_screen.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -285,6 +284,25 @@ class _AppState extends State<App> {
     }
   }
 
+  void showFullChangelogDialog(String changelog) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Что нового"),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(child: Text(changelog)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text("Закрыть"),
+          ),
+        ],
+      ),
+    );
+  }
+
   void showUpdateDialog(String apkUrl, String changelog) {
     bool downloading = false;
 
@@ -301,7 +319,12 @@ class _AppState extends State<App> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(changelog),
+              Text(changelog.split('\n').take(4).join('\n')),
+              if (changelog.split('\n').length > 4)
+                TextButton(
+                  onPressed: () => showFullChangelogDialog(changelog),
+                  child: const Text("Подробнее"),
+                ),
               if (downloading) ...[
                 const SizedBox(height: 16),
                 const LinearProgressIndicator(),
@@ -356,14 +379,51 @@ class _AppState extends State<App> {
     );
   }
 
-  void _openSettingsScreen({String initialSection = 'main'}) {
-    if (initialSection == 'account') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AccountScreen()),
-      );
-      return;
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Выйти?'),
+        content: const Text('Вы действительно хотите выйти из аккаунта?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Выйти'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseAuth.instance.signOut();
     }
+  }
+
+  void _openSettingsScreen({String initialSection = 'main'}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsScreen(
+          initialSection: initialSection,
+          collectLogs: collectLogs,
+          appLogs: appLogs,
+          onCollectLogsChanged: (value) {
+            setState(() => collectLogs = value);
+          },
+          onClearLogs: () {
+            setState(() => appLogs.clear());
+          },
+          showUpdateBadge: showUpdateBadge,
+          onShowUpdateBadgeChanged: (value) {
+            setState(() => showUpdateBadge = value);
+          },
+        ),
+      ),
+    );
 
     Navigator.push(
       context,
@@ -1392,6 +1452,7 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.of(context).size.width < 600;
     return DefaultTabController(
       length: 4,
       child: Scaffold(
@@ -1501,18 +1562,30 @@ class _AppState extends State<App> {
             ],
           ),
           actions: [
-            // Исправленный вызов рандома (Пункт 1
-            IconButton(
-              icon: Icon(
-                themeNotifier.value == ThemeMode.light
-                    ? Icons.dark_mode
-                    : Icons.light_mode,
+            if (!isCompact)
+              IconButton(
+                tooltip: 'Случайный выбор',
+                icon: const Icon(Icons.casino),
+                onPressed: () {
+                  final tabs = ['all', 'work', 'archive', 'rewatch'];
+                  final currentIdx = DefaultTabController.of(context).index;
+                  _showRandomItem(tabs[currentIdx]);
+                },
               ),
-              onPressed: () =>
+            // Исправленный вызов рандома (Пункт 1
+            if (!isCompact)
+              IconButton(
+                icon: Icon(
+                  themeNotifier.value == ThemeMode.light
+                      ? Icons.dark_mode
+                      : Icons.light_mode,
+                ),
+                onPressed: () {
                   themeNotifier.value = themeNotifier.value == ThemeMode.light
-                  ? ThemeMode.dark
-                  : ThemeMode.light,
-            ),
+                      ? ThemeMode.dark
+                      : ThemeMode.light;
+                },
+              ),
             StreamBuilder<User?>(
               stream: FirebaseAuth.instance.authStateChanges(),
               builder: (context, snapshot) {
@@ -1555,8 +1628,12 @@ class _AppState extends State<App> {
                           final currentIdx = DefaultTabController.of(
                             context,
                           ).index;
-
                           _showRandomItem(tabs[currentIdx]);
+                        } else if (value == 'theme') {
+                          themeNotifier.value =
+                              themeNotifier.value == ThemeMode.light
+                              ? ThemeMode.dark
+                              : ThemeMode.light;
                         } else if (value == 'account') {
                           _openSettingsScreen(initialSection: 'account');
                         } else if (value == 'settings') {
@@ -1570,10 +1647,8 @@ class _AppState extends State<App> {
                               pendingUpdateChangelog ?? '',
                             );
                           }
-                        } else if (value == 'switch') {
-                          await FirebaseAuth.instance.signOut();
                         } else if (value == 'logout') {
-                          await FirebaseAuth.instance.signOut();
+                          await _confirmLogout();
                         }
                       },
                       itemBuilder: (context) => [
@@ -1609,17 +1684,6 @@ class _AppState extends State<App> {
                           ),
                         ),
 
-                        const PopupMenuItem(
-                          value: 'random',
-                          child: Row(
-                            children: [
-                              Icon(Icons.casino, size: 18),
-                              SizedBox(width: 8),
-                              Text('Рандом'),
-                            ],
-                          ),
-                        ),
-
                         if (pendingUpdateUrl != null)
                           const PopupMenuItem(
                             value: 'update',
@@ -1631,7 +1695,29 @@ class _AppState extends State<App> {
                               ],
                             ),
                           ),
+                        if (isCompact)
+                          const PopupMenuItem(
+                            value: 'random',
+                            child: Row(
+                              children: [
+                                Icon(Icons.casino, size: 18),
+                                SizedBox(width: 8),
+                                Text('Рандом'),
+                              ],
+                            ),
+                          ),
 
+                        if (isCompact)
+                          const PopupMenuItem(
+                            value: 'theme',
+                            child: Row(
+                              children: [
+                                Icon(Icons.dark_mode, size: 18),
+                                SizedBox(width: 8),
+                                Text('Сменить тему'),
+                              ],
+                            ),
+                          ),
                         const PopupMenuItem(
                           value: 'settings',
                           child: Row(
@@ -1653,17 +1739,6 @@ class _AppState extends State<App> {
                           ),
                         ),
                         const PopupMenuDivider(),
-
-                        const PopupMenuItem(
-                          value: 'switch',
-                          child: Row(
-                            children: [
-                              Icon(Icons.swap_horiz, size: 18),
-                              SizedBox(width: 8),
-                              Text('Сменить аккаунт'),
-                            ],
-                          ),
-                        ),
 
                         const PopupMenuItem(
                           value: 'logout',
@@ -1688,6 +1763,12 @@ class _AppState extends State<App> {
                 );
               },
             ),
+            if (!isCompact)
+              IconButton(
+                tooltip: 'Выйти',
+                icon: const Icon(Icons.logout),
+                onPressed: _confirmLogout,
+              ),
           ],
         ),
         drawer: _buildDrawer(),

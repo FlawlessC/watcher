@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'setting_tile.dart';
 
 class EditableSettingTile extends StatefulWidget {
   const EditableSettingTile({
@@ -179,39 +180,14 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.value,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: 'Изменить',
-            onPressed: () => setState(() => _editing = true),
-            icon: const Icon(Icons.edit),
-          ),
-        ],
-      ),
-    );
+    return SettingTile(
+  title: widget.title,
+  value: widget.value,
+  trailing: IconButton(
+    tooltip: 'Изменить',
+    onPressed: () => setState(() => _editing = true),
+    icon: const Icon(Icons.edit),
+  ),
+);
   }
 }

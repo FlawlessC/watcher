@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.1.0",
-    "build":  13,
-    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.1.0/app-release.apk",
-    "changelog":  "• Complete Settings section redesign\n • Account page with editable profile\n • Unique Watcher ID for every user\n • Firestore user profiles (users collection)\n • Persistent guest accounts\n • Editable display name\n • Editable profile email\n • Copy Watcher ID and username\n • Separate Notifications, Logs and Feedback pages\n**Improved:**\n • Project structure and settings architecture\n**Fixed:**\n • Various bugs and stability improvements"
+    "version":  "1.1.1",
+    "build":  14,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.1.1/app-release.apk",
+    "changelog":  "• Redesigned account management with dedicated sections.\n• Added account information, profile, security, and authentication pages.\n• Introduced editable profile fields and copyable account details.\n• Added account logout confirmation.\n• Added delayed account deletion with recovery period.\n• Added in-app update notifications.\n• Added log collection settings and log viewer.\n• Added feedback section.\n• Improved settings navigation and overall UI.\n• Improved adaptive layouts for Android, Web, and Desktop.\n• Improved theme switching animation.\n• Various bug fixes and performance improvements."
 }

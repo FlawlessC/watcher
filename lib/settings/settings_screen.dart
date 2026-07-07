@@ -5,7 +5,7 @@ import 'feedback_screen.dart';
 import 'logs_screen.dart';
 import 'notifications_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     this.initialSection = 'main',
@@ -16,13 +16,28 @@ class SettingsScreen extends StatelessWidget {
     required this.showUpdateBadge,
     required this.onShowUpdateBadgeChanged,
   });
-  final bool showUpdateBadge;
-  final ValueChanged<bool> onShowUpdateBadgeChanged;
+
   final String initialSection;
   final bool collectLogs;
   final List<String> appLogs;
   final ValueChanged<bool> onCollectLogsChanged;
   final VoidCallback onClearLogs;
+  final bool showUpdateBadge;
+  final ValueChanged<bool> onShowUpdateBadgeChanged;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool accountExpanded = true;
+
+  void _openAccount(AccountSection section) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AccountScreen(initialSection: section)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,66 +45,91 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Настройки')),
       body: ListView(
         children: [
-          ListTile(
-            title: const Text("Аккаунт"),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AccountScreen()),
-              );
-            },
+          ExpansionTile(
+            initiallyExpanded: true,
+            title: const Text('Аккаунт'),
+            children: [
+              ListTile(
+                title: const Text('Основная информация'),
+                onTap: () => _openAccount(AccountSection.general),
+              ),
+              ListTile(
+                title: const Text('Личные данные'),
+                onTap: () => _openAccount(AccountSection.profile),
+              ),
+              ListTile(
+                title: const Text('Безопасность'),
+                onTap: () => _openAccount(AccountSection.security),
+              ),
+              ListTile(
+                title: const Text('Авторизация'),
+                onTap: () => _openAccount(AccountSection.auth),
+              ),
+            ],
           ),
 
           const Divider(height: 1),
 
-          ListTile(
-            title: const Text("Уведомления"),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => NotificationsScreen(
-                    showUpdateBadge: showUpdateBadge,
-                    onShowUpdateBadgeChanged: onShowUpdateBadgeChanged,
-                  ),
-                ),
-              );
-            },
+          ExpansionTile(
+            title: const Text('Уведомления'),
+            children: [
+              ListTile(
+                title: const Text('Настройки уведомлений'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => NotificationsScreen(
+                        showUpdateBadge: widget.showUpdateBadge,
+                        onShowUpdateBadgeChanged:
+                            widget.onShowUpdateBadgeChanged,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
 
           const Divider(height: 1),
 
-          ListTile(
-            title: const Text("Логи"),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LogsScreen(
-                    collectLogs: collectLogs,
-                    appLogs: appLogs,
-                    onCollectLogsChanged: onCollectLogsChanged,
-                    onClearLogs: onClearLogs,
-                  ),
-                ),
-              );
-            },
+          ExpansionTile(
+            title: const Text('Логи'),
+            children: [
+              ListTile(
+                title: const Text('Настройки логов'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LogsScreen(
+                        collectLogs: widget.collectLogs,
+                        appLogs: widget.appLogs,
+                        onCollectLogsChanged: widget.onCollectLogsChanged,
+                        onClearLogs: widget.onClearLogs,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
 
           const Divider(height: 1),
 
-          ListTile(
-            title: const Text("Обратная связь"),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-              );
-            },
+          ExpansionTile(
+            title: const Text('Обратная связь'),
+            children: [
+              ListTile(
+                title: const Text('Открыть раздел'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FeedbackScreen()),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),
