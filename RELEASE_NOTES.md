@@ -1,19 +1,26 @@
-﻿## Watcher 1.1.1
+﻿## Watcher 1.1.2
 
-• Redesigned account management with dedicated sections.
-• Added account information, profile, security, and authentication pages.
-• Introduced editable profile fields and copyable account details.
-• Added account logout confirmation.
-• Added delayed account deletion with recovery period.
-• Added in-app update notifications.
-• Added log collection settings and log viewer.
-• Added feedback section.
-• Improved settings navigation and overall UI.
-• Improved adaptive layouts for Android, Web, and Desktop.
-• Improved theme switching animation.
-• Various bug fixes and performance improvements.
+**New:** New item organization with Future, Present and Again sections
+**New:** Past and Later sections that preserve the original item status
+**New:** Past and Later filters can be combined with categories
+**New:** Multi-selection mode for item actions
+**New:** Bulk actions for Later, Past and deletion
+**New:** Feedback messages are now sent directly to Firestore
+**New:** Log sharing, copying and clearing tools
+**Improved:** Completely redesigned Settings interface
+**Improved:** Adaptive sidebar navigation for Web and Desktop
+**Improved:** Android navigation drawer for Settings
+**Improved:** Category filtering and multi-selection
+**Improved:** Update dialog layout and changelog scrolling
+**Improved:** Account and Settings UI
+**Fixed:** Duplicate settings navigation
+**Fixed:** Category deletion now removes the category from affected items
+**Fixed:** Scrolling dead zones on wide Web layouts
+**Fixed:** Drawer navigation restoration
+**Fixed:** Item checkbox now enables selection instead of moving items immediately
+**Fixed:** Various UI and stability issues
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.1.1+14
+- App version bumped to 1.1.2+15

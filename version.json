@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.1.1",
-    "build":  14,
-    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.1.1/app-release.apk",
-    "changelog":  "• Redesigned account management with dedicated sections.\n• Added account information, profile, security, and authentication pages.\n• Introduced editable profile fields and copyable account details.\n• Added account logout confirmation.\n• Added delayed account deletion with recovery period.\n• Added in-app update notifications.\n• Added log collection settings and log viewer.\n• Added feedback section.\n• Improved settings navigation and overall UI.\n• Improved adaptive layouts for Android, Web, and Desktop.\n• Improved theme switching animation.\n• Various bug fixes and performance improvements."
+    "version":  "1.1.2",
+    "build":  15,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.1.2/app-release.apk",
+    "changelog":  "**New:** New item organization with Future, Present and Again sections\n**New:** Past and Later sections that preserve the original item status\n**New:** Past and Later filters can be combined with categories\n**New:** Multi-selection mode for item actions\n**New:** Bulk actions for Later, Past and deletion\n**New:** Feedback messages are now sent directly to Firestore\n**New:** Log sharing, copying and clearing tools\n**Improved:** Completely redesigned Settings interface\n**Improved:** Adaptive sidebar navigation for Web and Desktop\n**Improved:** Android navigation drawer for Settings\n**Improved:** Category filtering and multi-selection\n**Improved:** Update dialog layout and changelog scrolling\n**Improved:** Account and Settings UI\n**Fixed:** Duplicate settings navigation\n**Fixed:** Category deletion now removes the category from affected items\n**Fixed:** Scrolling dead zones on wide Web layouts\n**Fixed:** Drawer navigation restoration\n**Fixed:** Item checkbox now enables selection instead of moving items immediately\n**Fixed:** Various UI and stability issues"
 }
