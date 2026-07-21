@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import '../../l10n/l10n_extension.dart';
 import 'setting_tile.dart';
 
 class CopyableSettingTile extends StatelessWidget {
@@ -21,21 +21,15 @@ class CopyableSettingTile extends StatelessWidget {
       title: title,
       value: value,
       trailing: IconButton(
-        tooltip: "Копировать",
+        tooltip: context.l10n.settingCopy,
         icon: const Icon(Icons.copy),
         onPressed: () async {
-          await Clipboard.setData(
-            ClipboardData(text: value),
-          );
+          await Clipboard.setData(ClipboardData(text: value));
 
           if (!context.mounted) return;
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                copyMessage ?? "Скопировано",
-              ),
-            ),
+            SnackBar(content: Text(copyMessage ?? context.l10n.settingCopied)),
           );
         },
       ),

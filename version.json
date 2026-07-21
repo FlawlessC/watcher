@@ -1,6 +1,6 @@
 ﻿{
-    "version":  "1.1.2",
-    "build":  15,
-    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.1.2/app-release.apk",
-    "changelog":  "**New:** New item organization with Future, Present and Again sections\n**New:** Past and Later sections that preserve the original item status\n**New:** Past and Later filters can be combined with categories\n**New:** Multi-selection mode for item actions\n**New:** Bulk actions for Later, Past and deletion\n**New:** Feedback messages are now sent directly to Firestore\n**New:** Log sharing, copying and clearing tools\n**Improved:** Completely redesigned Settings interface\n**Improved:** Adaptive sidebar navigation for Web and Desktop\n**Improved:** Android navigation drawer for Settings\n**Improved:** Category filtering and multi-selection\n**Improved:** Update dialog layout and changelog scrolling\n**Improved:** Account and Settings UI\n**Fixed:** Duplicate settings navigation\n**Fixed:** Category deletion now removes the category from affected items\n**Fixed:** Scrolling dead zones on wide Web layouts\n**Fixed:** Drawer navigation restoration\n**Fixed:** Item checkbox now enables selection instead of moving items immediately\n**Fixed:** Various UI and stability issues"
+    "version":  "1.2.0",
+    "build":  16,
+    "apk_url":  "https://github.com/FlawlessC/watcher/releases/download/v1.2.0/app-release.apk",
+    "changelog":  "*New:* Full Russian and English localization\n*New:* Language selection before signing in\n*New:* Language settings with System, Russian and English options\n*Improved:* Main screen, authentication, settings, account, logs, updates and feedback are now localized\n*Improved:* Language selection is synchronized across the entire app\n*Improved:* Tooltips and interface hints\n*Improved:* Technical information in feedback now shows only relevant details\n*Fixed:* Empty Language settings section\n*Fixed:* Missing language switcher on the sign-in screen\n*Fixed:* Missing tooltip for the theme button\n*Fixed:* Various localization and stability issues"
 }

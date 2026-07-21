@@ -1,26 +1,18 @@
-﻿## Watcher 1.1.2
+﻿## Watcher 1.2.0
 
-**New:** New item organization with Future, Present and Again sections
-**New:** Past and Later sections that preserve the original item status
-**New:** Past and Later filters can be combined with categories
-**New:** Multi-selection mode for item actions
-**New:** Bulk actions for Later, Past and deletion
-**New:** Feedback messages are now sent directly to Firestore
-**New:** Log sharing, copying and clearing tools
-**Improved:** Completely redesigned Settings interface
-**Improved:** Adaptive sidebar navigation for Web and Desktop
-**Improved:** Android navigation drawer for Settings
-**Improved:** Category filtering and multi-selection
-**Improved:** Update dialog layout and changelog scrolling
-**Improved:** Account and Settings UI
-**Fixed:** Duplicate settings navigation
-**Fixed:** Category deletion now removes the category from affected items
-**Fixed:** Scrolling dead zones on wide Web layouts
-**Fixed:** Drawer navigation restoration
-**Fixed:** Item checkbox now enables selection instead of moving items immediately
-**Fixed:** Various UI and stability issues
+*New:* Full Russian and English localization
+*New:* Language selection before signing in
+*New:* Language settings with System, Russian and English options
+*Improved:* Main screen, authentication, settings, account, logs, updates and feedback are now localized
+*Improved:* Language selection is synchronized across the entire app
+*Improved:* Tooltips and interface hints
+*Improved:* Technical information in feedback now shows only relevant details
+*Fixed:* Empty Language settings section
+*Fixed:* Missing language switcher on the sign-in screen
+*Fixed:* Missing tooltip for the theme button
+*Fixed:* Various localization and stability issues
 
 ### Changes
 - Android APK updated
 - Web version deployed
-- App version bumped to 1.1.2+15
+- App version bumped to 1.2.0+16

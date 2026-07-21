@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/l10n_extension.dart';
+
 class LogsSettingsSection extends StatefulWidget {
   const LogsSettingsSection({
     super.key,
@@ -40,7 +42,7 @@ class _LogsSettingsSectionState extends State<LogsSettingsSection> {
 
   String get _logsText {
     if (widget.appLogs.isEmpty) {
-      return 'Логов пока нет';
+      return context.l10n.logsEmpty;
     }
 
     return widget.appLogs.join('\n');
@@ -53,7 +55,7 @@ class _LogsSettingsSectionState extends State<LogsSettingsSection> {
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Логи скопированы')));
+    ).showSnackBar(SnackBar(content: Text(context.l10n.logsCopied)));
   }
 
   Future<void> _shareLogs() async {
@@ -61,10 +63,10 @@ class _LogsSettingsSectionState extends State<LogsSettingsSection> {
 
     await SharePlus.instance.share(
       ShareParams(
-        subject: 'Watcher — логи приложения',
+        subject: context.l10n.logsShareSubject,
         text:
             '''
-Watcher — логи приложения
+${context.l10n.logsShareHeader}
 
 $_logsText
 ''',
@@ -78,18 +80,16 @@ $_logsText
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Очистить логи?'),
-        content: const Text(
-          'Все собранные за текущий запуск логи будут удалены.',
-        ),
+        title: Text(context.l10n.logsClearQuestion),
+        content: Text(context.l10n.logsClearExplanation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Очистить'),
+            child: Text(context.l10n.logsClear),
           ),
         ],
       ),
@@ -105,7 +105,7 @@ $_logsText
 
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Логи очищены')));
+    ).showSnackBar(SnackBar(content: Text(context.l10n.logsCleared)));
   }
 
   @override
@@ -116,14 +116,14 @@ $_logsText
       padding: const EdgeInsets.all(24),
       children: [
         Text(
-          'Логи',
+          context.l10n.logs,
           style: Theme.of(
             context,
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
-          'Логи помогают найти причину ошибки в приложении.',
+          context.l10n.logsDescription,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -132,10 +132,8 @@ $_logsText
 
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Собирать логи'),
-          subtitle: const Text(
-            'Сбор выполняется только во время работы приложения.',
-          ),
+          title: Text(context.l10n.logsCollect),
+          subtitle: Text(context.l10n.logsCollectDescription),
           value: collectLogs,
           onChanged: (value) {
             setState(() => collectLogs = value);
@@ -149,7 +147,7 @@ $_logsText
           children: [
             Expanded(
               child: Text(
-                'Собранные логи',
+                context.l10n.logsCollected,
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -185,17 +183,17 @@ $_logsText
             FilledButton.icon(
               onPressed: hasLogs ? _shareLogs : null,
               icon: const Icon(Icons.share_outlined),
-              label: const Text('Поделиться'),
+              label: Text(context.l10n.logsShare),
             ),
             OutlinedButton.icon(
               onPressed: hasLogs ? _copyLogs : null,
               icon: const Icon(Icons.copy_outlined),
-              label: const Text('Копировать'),
+              label: Text(context.l10n.settingCopy),
             ),
             OutlinedButton.icon(
               onPressed: hasLogs ? _confirmClearLogs : null,
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Очистить'),
+              label: Text(context.l10n.logsClear),
             ),
           ],
         ),
@@ -203,4 +201,3 @@ $_logsText
     );
   }
 }
-

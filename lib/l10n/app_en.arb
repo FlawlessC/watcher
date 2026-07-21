@@ -1,0 +1,399 @@
+{
+  "@@locale": "en",
+
+  "appName": "Watcher",
+
+  "language": "Language",
+  "languageDescription": "Application interface language",
+  "languageSystem": "System default",
+  "languageRussian": "Русский",
+  "languageEnglish": "English",
+
+  "settings": "Settings",
+  "account": "Account",
+  "notifications": "Notifications",
+  "updates": "Updates",
+  "logs": "Logs",
+  "feedback": "Feedback",
+
+  "all": "All",
+  "future": "Future",
+  "present": "Present",
+  "again": "Again",
+  "past": "Past",
+  "later": "Later",
+
+  "search": "Search...",
+  "filters": "Filters",
+  "cancel": "Cancel",
+  "close": "Close",
+  "save": "Save",
+  "delete": "Delete",
+  "logout": "Log out",
+  "whatsNew": "What's new",
+
+  "nothingFound": "Nothing found",
+  "selectedCount": "Selected: {count}"
+  ,
+  "versionLabel": "Version {version}",
+
+  "updateApp": "Update app",
+  "randomChoice": "Random choice",
+  "random": "Random",
+  "changeTheme": "Change theme",
+
+  "showPast": "Show past",
+  "showLater": "Show later",
+
+  "deleteSelected": "Delete",
+  "selectedItems": "Selected: {count}"
+  ,
+  "filters": "Filters",
+  "filtersDescription": "You can select multiple categories at the same time.",
+  "showPast": "Show past",
+  "showPastDescription": "Include items from Past in the main lists and global search.",
+  "showLater": "Show later",
+  "showLaterDescription": "Include postponed items in the main lists and global search.",
+  "reset": "Reset",
+  "apply": "Apply",
+  "selectedCount": "Selected: {count}"
+  ,
+  "myLists": "My lists",
+  "categories": "Categories",
+  "noCategories": "No categories yet",
+  "newList": "New list",
+  "listNameHint": "Name (for example, Books)",
+  "create": "Create",
+  "deleteListTitle": "Delete list?",
+  "deleteListDescription": "The category will be deleted. Its items will remain, but this category will be removed from their tags.",
+  "categoryDeleted": "Category deleted",
+  "categoryDeleteError": "Failed to delete category",
+  "editList": "Edit list",
+  "newName": "New name",
+  "errorWithDetails": "Error: {error}",
+"@errorWithDetails": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+
+"editItem": "Edit item",
+"addItem": "Add new item",
+"title": "Title",
+"description": "Description",
+"currentProgress": "Current",
+"totalProgress": "Total",
+"progressOf": "of",
+"addToList": "Add to list",
+"mainList": "Main list:",
+"hideIn": "Hide in:",
+"noCategoriesHint": "There are no categories yet. You can create them in the side menu.",
+"itemProgress": "Progress: {current}/{total} {unit}",
+"@itemProgress": {
+  "placeholders": {
+    "current": {
+      "type": "String"
+    },
+    "total": {
+      "type": "String"
+    },
+    "unit": {
+      "type": "String"
+    }
+  }
+},
+"logoutTitle": "Log out?",
+"logoutDescription": "Are you sure you want to log out?",
+"installPermissionTitle": "Permission required",
+"installPermissionDescription": "Allow installing APKs from Watcher to update the application.",
+"later": "Later",
+"openSettings": "Open settings",
+"updateAvailable": "Update available",
+"downloadingApk": "Downloading APK...",
+"whatsNewInVersion": "What's new in version {version}",
+"releaseInfoUnavailable": "Release information is unavailable.",
+"close": "Close",
+"releaseInfoLoadError": "Failed to load release information",
+"maintenanceUnavailable": "Maintenance is in progress. Changes are temporarily unavailable.",
+"apkUpdatesAndroidOnly": "APK updates are available only on Android",
+"latestVersionInstalled": "The latest version is installed",
+"apkInstallerOpenError": "Failed to open the APK installer: {error}",
+"@apkInstallerOpenError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"updateError": "Update error: {error}",
+"@updateError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"updateAvailableVersion": "Update {version} is available",
+"@updateAvailableVersion": {
+  "placeholders": {
+    "version": {
+      "type": "String"
+    }
+  }
+},
+"update": "Update",
+"bulkTagRemoved": "The “{tag}” tag was removed",
+"@bulkTagRemoved": {
+  "placeholders": {
+    "tag": {
+      "type": "String"
+    }
+  }
+},
+"bulkItemsMoved": "Selected items were moved to “{tag}”",
+"@bulkItemsMoved": {
+  "placeholders": {
+    "tag": {
+      "type": "String"
+    }
+  }
+},
+"bulkChangeError": "Failed to update the selected items",
+"deleteSelectedItemsTitle": "Delete selected items?",
+"deleteSelectedItemsDescription": "{count} items will be deleted. This action cannot be undone.",
+"@deleteSelectedItemsDescription": {
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+"deletedItemsCount": "Items deleted: {count}",
+"@deletedItemsCount": {
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+"bulkDeleteError": "Failed to delete the selected items",
+"randomListEmpty": "There are no matching items in the currently filtered list",
+"howAboutThis": "How about this?",
+"untitled": "Untitled",
+"another": "Another",
+"maintenanceDefaultMessage": "Maintenance is in progress",
+"progressUnitEpisode": "episode",
+"progressUnitPage": "pages",
+"progressUnitChapter": "chapters",
+"progressUnitBook": "book",
+"progressUnitSeason": "season",
+"progressUnitHours": "hours",
+"progressUnitAchievements": "achievements",
+"progressUnitNone": "no unit",
+"settings": "Settings",
+"settingsAccount": "Account",
+"settingsNotifications": "Notifications",
+"settingsLogs": "Logs",
+"settingsFeedback": "Feedback",
+"settingsUpdates": "Updates",
+"settingsLanguage": "Language",
+"backToWatcher": "Back to Watcher",
+"openMenu": "Open menu",
+"back": "Back",
+
+"authWait": "Please wait...",
+"authEmail": "Email",
+"authPassword": "Password",
+"authRepeatPassword": "Repeat password",
+"authSignIn": "Sign in",
+"authSignInWithGoogle": "Sign in with Google",
+"authSignInWithEmail": "Sign in with email",
+"authContinueAsGuest": "Continue as guest",
+"authCreateAccount": "Create account",
+"authAlreadyHaveAccount": "Already have an account",
+"authForgotPassword": "Forgot password?",
+"authRecoveryEmail": "Recovery email",
+"authSending": "Sending...",
+"authSendEmail": "Send email",
+"authBackToSignIn": "Back to sign in",
+
+"authEnterEmailAndPassword": "Enter your email and password",
+"authEnterEmail": "Enter your email",
+"authPasswordsDoNotMatch": "Passwords do not match",
+"authPasswordResetEmailSent": "Password reset email sent",
+
+"authGoogleSignInFailed": "Failed to sign in with Google",
+"authGuestSignInFailed": "Failed to continue as guest",
+"authEmailSendFailed": "Failed to send the email",
+"authSignInFailed": "Failed to sign in",
+
+"authEmailAlreadyInUse": "This email is already registered",
+"authInvalidEmail": "Invalid email address",
+"authWeakPassword": "The password is too weak",
+"authUserNotFound": "User not found",
+"authWrongEmailOrPassword": "Incorrect email or password",
+
+"accountGuest": "Guest",
+"accountUnknownProvider": "Unknown",
+"accountUnnamed": "Unnamed",
+"accountUserNotFound": "User not found",
+"accountLoadFailed": "Failed to load account: {error}",
+"@accountLoadFailed": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+
+"accountSignOutQuestion": "Sign out?",
+"accountSignOutConfirmation": "Are you sure you want to sign out of your account?",
+"accountSignOut": "Sign out",
+
+"accountDeleteQuestion": "Delete account?",
+"accountDeleteExplanation": "The account will be disabled immediately, but permanently deleted only after 14 days.\n\nUntil then, it can be restored.",
+"accountDelete": "Delete",
+"accountDeleteAccount": "Delete account",
+
+"accountMainInformation": "Main information",
+"accountPersonalData": "Personal data",
+"accountSecurity": "Security",
+"accountAuthorization": "Authorization",
+
+"accountWatcherId": "Watcher ID",
+"accountWatcherIdCopied": "Watcher ID copied",
+"accountLogin": "Username",
+"accountLoginCopied": "Username copied",
+
+"accountNickname": "Nickname",
+"accountChangeNicknameQuestion": "Change nickname?",
+"accountChangeNicknameExplanation": "The new nickname will be displayed in the app.",
+
+"accountChangeEmailQuestion": "Change email?",
+"accountChangeEmailExplanation": "The email will be changed in the profile. Updating Firebase Auth will be added separately.",
+
+"accountPassword": "Password",
+"accountChangePassword": "Change password",
+"accountPasswordEmailOnly": "Available for email accounts",
+"accountPasswordComingSoon": "Password changes will be added later",
+
+"accountActiveDevices": "Active devices",
+"accountActiveDevicesComingSoon": "Active devices will be added later",
+"accountTwoFactorProtection": "Two-factor authentication",
+"accountTwoFactorComingSoon": "Two-factor authentication will be added later",
+"accountComingSoon": "Coming later",
+
+"accountSignInType": "Sign-in method",
+"accountLinkGoogle": "Link Google",
+"accountLinkGoogleComingSoon": "Linking Google will be added later",
+"accountLinkEmail": "Link Email",
+"accountLinkEmailComingSoon": "Linking Email will be added later",
+
+"feedbackTitle": "Feedback",
+"feedbackSubtitle": "Report a bug or suggest an improvement for Watcher.",
+
+"feedbackType": "Feedback type",
+"feedbackBug": "Bug",
+"feedbackImprovement": "Suggestion",
+"feedbackOther": "Other",
+
+"feedbackDescription": "Description",
+"feedbackDescriptionHint": "What happened, what did you expect, and how can it be reproduced?",
+
+"feedbackSend": "Send",
+"feedbackSending": "Sending...",
+
+"feedbackTechnicalInformation": "Technical information",
+"feedbackCopy": "Copy",
+"feedbackCopied": "Copied",
+
+"feedbackLoading": "Loading...",
+"feedbackLoadFailed": "Failed to retrieve information",
+
+"feedbackApplication": "Application",
+"feedbackVersion": "Version",
+"feedbackPlatform": "Platform",
+
+"feedbackMessageTooShort": "Please describe the issue or suggestion using at least 10 characters.",
+"feedbackLoginRequired": "You must be signed in to send feedback.",
+
+"feedbackSent": "Message sent. Thank you!",
+"feedbackSendFailed": "Failed to send the message",
+"feedbackPermissionDenied": "Permission denied. Please report the issue by email.",
+
+"logsDescription": "Logs help identify the cause of errors in the application.",
+"logsCollect": "Collect logs",
+"logsCollectDescription": "Logs are collected only while the application is running.",
+"logsCollected": "Collected logs",
+"logsEmpty": "No logs yet",
+"logsCopied": "Logs copied",
+"logsCleared": "Logs cleared",
+"logsShare": "Share",
+"logsClear": "Clear",
+"logsClearQuestion": "Clear logs?",
+"logsClearExplanation": "All logs collected during the current session will be deleted.",
+"logsShareSubject": "Watcher — application logs",
+"logsShareHeader": "Watcher — application logs",
+
+"settingCopy": "Copy",
+"settingCopied": "Copied",
+"settingEdit": "Edit",
+"settingValueTooShort": "The value must contain at least 2 characters",
+"settingChangesSaved": "Changes saved",
+"settingSaveFailed": "Failed to save: {error}",
+"@settingSaveFailed": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"updatesDescription": "Check for and install new versions of Watcher.",
+"updatesCurrentVersion": "Current version",
+"updatesAvailable": "Update available",
+"updatesNewVersion": "New version",
+"updatesShowIndicator": "Show update indicator",
+"updatesIndicatorDescription": "A red dot will appear on the profile icon when a new version is available.",
+"updatesCheck": "Check for updates",
+"updatesWhatsNew": "What's new",
+
+"notificationsShowUpdate": "Show update notification",
+"notificationsShowUpdateDescription": "When disabled, the red dot will not appear on the profile icon.",
+"logInstallPermissionCheckError": "Failed to check APK installation permission: {error}",
+"@logInstallPermissionCheckError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"logInstallSettingsOpenError": "Failed to open APK installation settings: {error}",
+"@logInstallSettingsOpenError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"logMaintenanceCheckError": "Failed to check maintenance mode: {error}",
+"@logMaintenanceCheckError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"logApkDownloadStarted": "APK download started",
+"logApkDownloaded": "APK downloaded",
+"logApkUpdateError": "Update failed: {error}",
+"@logApkUpdateError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+}
+
+}

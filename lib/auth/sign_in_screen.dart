@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../core/app_globals.dart';
 import 'auth_service.dart';
 import 'auth_view_mode.dart';
 import 'widgets/auth_header.dart';
 import 'widgets/auth_text_field.dart';
 import 'widgets/login_button.dart';
+import '../l10n/l10n_extension.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -48,7 +50,7 @@ class _SignInScreenState extends State<SignInScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось войти через Google')),
+        SnackBar(content: Text(context.l10n.authGoogleSignInFailed)),
       );
     } finally {
       if (mounted) {
@@ -66,12 +68,12 @@ class _SignInScreenState extends State<SignInScreen> {
     final repeatPassword = repeatPasswordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnack('Введите email и пароль');
+      _showSnack(context.l10n.authEnterEmailAndPassword);
       return;
     }
 
     if (authMode == AuthViewMode.emailRegister && password != repeatPassword) {
-      _showSnack('Пароли не совпадают');
+      _showSnack(context.l10n.authPasswordsDoNotMatch);
       return;
     }
 
@@ -90,6 +92,8 @@ class _SignInScreenState extends State<SignInScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
       _showSnack(_authErrorMessage(e));
     } finally {
       if (mounted) setState(() => loading = false);
@@ -100,7 +104,7 @@ class _SignInScreenState extends State<SignInScreen> {
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
-      _showSnack('Введите email');
+      _showSnack(context.l10n.authEnterEmail);
       return;
     }
 
@@ -111,10 +115,12 @@ class _SignInScreenState extends State<SignInScreen> {
 
       if (!mounted) return;
 
-      _showSnack('Письмо для сброса пароля отправлено');
+      _showSnack(context.l10n.authPasswordResetEmailSent);
       _openEmailLogin();
     } on FirebaseAuthException catch (e) {
-      _showSnack(e.message ?? 'Не удалось отправить письмо');
+      if (!mounted) return;
+
+      _showSnack(e.message ?? context.l10n.authEmailSendFailed);
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -129,7 +135,9 @@ class _SignInScreenState extends State<SignInScreen> {
     try {
       await AuthService.instance.signInAnonymously();
     } on FirebaseAuthException catch (e) {
-      _showSnack(e.message ?? 'Не удалось войти как гость');
+      if (!mounted) return;
+
+      _showSnack(e.message ?? context.l10n.authGuestSignInFailed);
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -179,6 +187,68 @@ class _SignInScreenState extends State<SignInScreen> {
     });
   }
 
+  Future<void> _showLanguageDialog() async {
+    final currentLanguageCode = localeController.selectedLanguageCode;
+
+    final selectedLanguageCode = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        var temporaryLanguageCode = currentLanguageCode;
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(context.l10n.language),
+              content: RadioGroup<String>(
+                groupValue: temporaryLanguageCode,
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  setDialogState(() {
+                    temporaryLanguageCode = value;
+                  });
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<String>(
+                      value: 'system',
+                      title: Text(context.l10n.languageSystem),
+                    ),
+                    RadioListTile<String>(
+                      value: 'ru',
+                      title: Text(context.l10n.languageRussian),
+                    ),
+                    RadioListTile<String>(
+                      value: 'en',
+                      title: Text(context.l10n.languageEnglish),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(context.l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext, temporaryLanguageCode);
+                  },
+                  child: Text(context.l10n.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (selectedLanguageCode == null) return;
+
+    await localeController.setLanguageCode(selectedLanguageCode);
+  }
+
   void _showSnack(String message) {
     if (!mounted) return;
 
@@ -189,26 +259,26 @@ class _SignInScreenState extends State<SignInScreen> {
 
   String _authErrorMessage(FirebaseAuthException e) {
     if (e.code == 'email-already-in-use') {
-      return 'Этот email уже зарегистрирован';
+      return context.l10n.authEmailAlreadyInUse;
     }
 
     if (e.code == 'invalid-email') {
-      return 'Некорректный email';
+      return context.l10n.authInvalidEmail;
     }
 
     if (e.code == 'weak-password') {
-      return 'Пароль слишком простой';
+      return context.l10n.authWeakPassword;
     }
 
     if (e.code == 'user-not-found') {
-      return 'Пользователь не найден';
+      return context.l10n.authUserNotFound;
     }
 
     if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-      return 'Неверный email или пароль';
+      return context.l10n.authWrongEmailOrPassword;
     }
 
-    return 'Не удалось войти';
+    return context.l10n.authSignInFailed;
   }
 
   @override
@@ -265,6 +335,19 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
           ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: IconButton.filledTonal(
+                  tooltip: context.l10n.language,
+                  onPressed: loading ? null : _showLanguageDialog,
+                  icon: const Icon(Icons.language),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -292,22 +375,22 @@ class _SignInScreenState extends State<SignInScreen> {
         LoginButton(
           icon: Icons.g_mobiledata,
           text: loadingAction == 'google'
-              ? 'Подождите...'
-              : 'Войти через Google',
+              ? context.l10n.authWait
+              : context.l10n.authSignInWithGoogle,
           onPressed: isLoading ? null : _signInWithGoogle,
         ),
         const SizedBox(height: 12),
         LoginButton(
           icon: Icons.mail_outline,
-          text: 'Войти по email',
+          text: context.l10n.authSignInWithEmail,
           onPressed: isLoading ? null : _openEmailLogin,
         ),
         const SizedBox(height: 12),
         LoginButton(
           icon: Icons.person_outline,
           text: loadingAction == 'guest'
-              ? 'Подождите...'
-              : 'Продолжить как гость',
+              ? context.l10n.authWait
+              : context.l10n.authContinueAsGuest,
           onPressed: isLoading ? null : _signInAsGuest,
         ),
       ],
@@ -320,14 +403,14 @@ class _SignInScreenState extends State<SignInScreen> {
       children: [
         AuthTextField(
           controller: emailController,
-          label: 'Email',
+          label: context.l10n.authEmail,
           icon: Icons.mail_outline,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 12),
         AuthTextField(
           controller: passwordController,
-          label: 'Пароль',
+          label: context.l10n.authPassword,
           icon: Icons.lock_outline,
           obscureText: obscurePassword,
           suffix: _passwordVisibilityButton(),
@@ -336,7 +419,7 @@ class _SignInScreenState extends State<SignInScreen> {
           const SizedBox(height: 12),
           AuthTextField(
             controller: repeatPasswordController,
-            label: 'Повтор пароля',
+            label: context.l10n.authRepeatPassword,
             icon: Icons.lock_reset_outlined,
             obscureText: obscurePassword,
           ),
@@ -345,18 +428,18 @@ class _SignInScreenState extends State<SignInScreen> {
         LoginButton(
           icon: isRegister ? Icons.person_add_alt_1 : Icons.login,
           text: loading
-              ? 'Подождите...'
+              ? context.l10n.authWait
               : isRegister
-              ? 'Создать аккаунт'
-              : 'Войти',
+              ? context.l10n.authCreateAccount
+              : context.l10n.authSignIn,
           onPressed: loading ? null : _submitEmailAuth,
         ),
         if (!isRegister)
           TextButton(
             onPressed: loading ? null : _openPasswordReset,
-            child: const Text(
-              'Забыли пароль?',
-              style: TextStyle(color: Colors.white70),
+            child: Text(
+              context.l10n.authForgotPassword,
+              style: const TextStyle(color: Colors.white70),
             ),
           ),
         const SizedBox(height: 10),
@@ -367,14 +450,19 @@ class _SignInScreenState extends State<SignInScreen> {
               ? _openEmailLogin
               : _openEmailRegister,
           child: Text(
-            isRegister ? 'Уже есть аккаунт' : 'Создать аккаунт',
+            isRegister
+                ? context.l10n.authAlreadyHaveAccount
+                : context.l10n.authCreateAccount,
             style: const TextStyle(color: Colors.white70),
           ),
         ),
         TextButton.icon(
           onPressed: loading ? null : _backToMain,
           icon: const Icon(Icons.arrow_back, color: Colors.white70),
-          label: const Text('Назад', style: TextStyle(color: Colors.white70)),
+          label: Text(
+            context.l10n.back,
+            style: const TextStyle(color: Colors.white70),
+          ),
         ),
       ],
     );
@@ -387,22 +475,22 @@ class _SignInScreenState extends State<SignInScreen> {
         AuthTextField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
-          label: 'Email для восстановления',
+          label: context.l10n.authRecoveryEmail,
           icon: Icons.mail_outline,
         ),
         const SizedBox(height: 18),
         LoginButton(
           icon: Icons.mark_email_read_outlined,
-          text: loading ? 'Отправляю...' : 'Отправить письмо',
+          text: loading ? context.l10n.authSending : context.l10n.authSendEmail,
           onPressed: loading ? null : _sendPasswordResetEmail,
         ),
         const SizedBox(height: 10),
         TextButton.icon(
           onPressed: loading ? null : _openEmailLogin,
           icon: const Icon(Icons.arrow_back, color: Colors.white70),
-          label: const Text(
-            'Назад ко входу',
-            style: TextStyle(color: Colors.white70),
+          label: Text(
+            context.l10n.authBackToSignIn,
+            style: const TextStyle(color: Colors.white70),
           ),
         ),
       ],

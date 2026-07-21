@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
-
+import 'sections/updates_settings_section.dart';
 import 'sections/account_settings_section.dart';
 import 'sections/feedback_settings_section.dart';
 import 'sections/logs_settings_section.dart';
 import 'sections/notifications_settings_section.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'sections/language_settings_section.dart';
+import '../l10n/l10n_extension.dart';
 
-enum SettingsSection { account, notifications, logs, feedback }
+enum SettingsSection {
+  account,
+  language,
+  notifications,
+  updates,
+  logs,
+  feedback,
+}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -17,6 +27,11 @@ class SettingsScreen extends StatefulWidget {
     required this.onClearLogs,
     required this.showUpdateBadge,
     required this.onShowUpdateBadgeChanged,
+    required this.currentVersion,
+    required this.updateAvailable,
+    required this.availableVersion,
+    required this.onCheckForUpdate,
+    required this.onShowReleaseNotes,
   });
 
   final String initialSection;
@@ -26,7 +41,12 @@ class SettingsScreen extends StatefulWidget {
   final VoidCallback onClearLogs;
   final bool showUpdateBadge;
   final ValueChanged<bool> onShowUpdateBadgeChanged;
+  final String currentVersion;
+  final bool updateAvailable;
+  final String? availableVersion;
 
+  final Future<void> Function() onCheckForUpdate;
+  final Future<void> Function() onShowReleaseNotes;
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -42,6 +62,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       'notifications' => SettingsSection.notifications,
       'logs' => SettingsSection.logs,
       'feedback' => SettingsSection.feedback,
+      'updates' => SettingsSection.updates,
+      'language' => SettingsSection.language,
       _ => SettingsSection.account,
     };
   }
@@ -49,13 +71,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _sectionTitle(SettingsSection section) {
     switch (section) {
       case SettingsSection.account:
-        return 'Аккаунт';
+        return context.l10n.settingsAccount;
       case SettingsSection.notifications:
-        return 'Уведомления';
+        return context.l10n.settingsNotifications;
       case SettingsSection.logs:
-        return 'Логи';
+        return context.l10n.settingsLogs;
       case SettingsSection.feedback:
-        return 'Обратная связь';
+        return context.l10n.settingsFeedback;
+      case SettingsSection.updates:
+        return context.l10n.settingsUpdates;
+      case SettingsSection.language:
+        return context.l10n.settingsLanguage;
     }
   }
 
@@ -69,6 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return Icons.description_outlined;
       case SettingsSection.feedback:
         return Icons.feedback_outlined;
+      case SettingsSection.updates:
+        return Icons.system_update_outlined;
+      case SettingsSection.language:
+        return Icons.language;
     }
   }
 
@@ -96,7 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (compact) ...[
           ListTile(
             leading: const Icon(Icons.arrow_back),
-            title: const Text('Назад в Watcher'),
+            title: Text(context.l10n.backToWatcher),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -105,18 +135,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Divider(height: 24),
         ],
         for (final section in SettingsSection.values)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: ListTile(
-              selected: selectedSection == section,
-              leading: Icon(_sectionIcon(section)),
-              title: Text(_sectionTitle(section)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          if (!kIsWeb || section != SettingsSection.updates)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: ListTile(
+                selected: selectedSection == section,
+                leading: Icon(_sectionIcon(section)),
+                title: Text(_sectionTitle(section)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                onTap: () => _selectSection(section, closeDrawer: compact),
               ),
-              onTap: () => _selectSection(section, closeDrawer: compact),
             ),
-          ),
       ],
     );
   }
@@ -136,7 +167,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         );
-
+      case SettingsSection.updates:
+        return UpdatesSettingsSection(
+          currentVersion: widget.currentVersion,
+          showUpdateBadge: widget.showUpdateBadge,
+          onShowUpdateBadgeChanged: widget.onShowUpdateBadgeChanged,
+          onCheckForUpdate: widget.onCheckForUpdate,
+          onShowReleaseNotes: widget.onShowReleaseNotes,
+          updateAvailable: widget.updateAvailable,
+          availableVersion: widget.availableVersion,
+        );
+      case SettingsSection.language:
+        return const LanguageSettingsSection();
       case SettingsSection.notifications:
         return NotificationsSettingsSection(
           showUpdateBadge: widget.showUpdateBadge,
@@ -169,7 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ? Builder(
                     builder: (scaffoldContext) {
                       return IconButton(
-                        tooltip: 'Открыть меню',
+                        tooltip: context.l10n.openMenu,
                         icon: const Icon(Icons.menu),
                         onPressed: () {
                           Scaffold.of(scaffoldContext).openDrawer();
@@ -178,11 +220,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   )
                 : IconButton(
-                    tooltip: 'Назад',
+                    tooltip: context.l10n.back,
                     icon: const Icon(Icons.arrow_back),
                     onPressed: () => Navigator.maybePop(context),
                   ),
-            title: Text(compact ? _sectionTitle(selectedSection) : 'Настройки'),
+            title: Text(
+              compact ? _sectionTitle(selectedSection) : context.l10n.settings,
+            ),
           ),
           drawer: compact
               ? Drawer(child: SafeArea(child: _buildNavigation(compact: true)))

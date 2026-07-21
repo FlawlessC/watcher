@@ -11,6 +11,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/user_profile_service.dart';
 import '../core/app_globals.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n_extension.dart';
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -50,7 +52,7 @@ class _AppState extends State<App> {
       SnackBar(
         content: Text(
           maintenanceMessage.isEmpty
-              ? 'Проводятся технические работы. Изменения временно недоступны.'
+              ? context.l10n.maintenanceUnavailable
               : maintenanceMessage,
         ),
       ),
@@ -61,6 +63,39 @@ class _AppState extends State<App> {
 
   String appVersionLabel = '';
   String progressUnit = 'серия';
+  String _localizedProgressUnit(String unit) {
+    switch (unit) {
+      case 'серия':
+        return context.l10n.progressUnitEpisode;
+      case 'стр':
+        return context.l10n.progressUnitPage;
+      case 'гл':
+        return context.l10n.progressUnitChapter;
+      case 'книга':
+        return context.l10n.progressUnitBook;
+      case 'сезон':
+        return context.l10n.progressUnitSeason;
+      case 'часов':
+        return context.l10n.progressUnitHours;
+      case 'ачивок':
+        return context.l10n.progressUnitAchievements;
+      case '-':
+        return context.l10n.progressUnitNone;
+      default:
+        return unit;
+    }
+  }
+
+  String _localizedTag(String tag) {
+    switch (tag) {
+      case 'Прошлое':
+        return context.l10n.past;
+      case 'Потом':
+        return context.l10n.later;
+      default:
+        return tag;
+    }
+  }
 
   // Основной список редактируемой или создаваемой карточки.
   String selectedMainStatus = 'present';
@@ -90,7 +125,9 @@ class _AppState extends State<App> {
 
       return result ?? false;
     } catch (e) {
-      addLog("Ошибка проверки разрешения установки APK: $e");
+      if (!mounted) return false;
+
+      addLog(context.l10n.logInstallPermissionCheckError(e.toString()));
       return false;
     }
   }
@@ -101,7 +138,9 @@ class _AppState extends State<App> {
         'openInstallPermissionSettings',
       );
     } catch (e) {
-      addLog("Ошибка открытия настроек установки APK: $e");
+      if (!mounted) return;
+
+      addLog(context.l10n.logInstallSettingsOpenError(e.toString()));
     }
   }
 
@@ -112,21 +151,19 @@ class _AppState extends State<App> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text("Нужно разрешение"),
-        content: const Text(
-          "Для обновления разрешите установку APK из Watcher.",
-        ),
+        title: Text(context.l10n.installPermissionTitle),
+        content: Text(context.l10n.installPermissionDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("Позже"),
+            child: Text(context.l10n.later),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               await _openInstallPermissionSettings();
             },
-            child: const Text("Открыть настройки"),
+            child: Text(context.l10n.openSettings),
           ),
         ],
       ),
@@ -160,10 +197,121 @@ class _AppState extends State<App> {
 
       setState(() {
         maintenanceMode = data['maintenance'] ?? false;
-        maintenanceMessage = data['message'] ?? 'Проводятся технические работы';
+        maintenanceMessage =
+            data['message']?.toString() ??
+            context.l10n.maintenanceDefaultMessage;
       });
     } catch (e) {
-      addLog("Ошибка проверки техработ: $e");
+      addLog(context.l10n.logMaintenanceCheckError(e.toString()));
+    }
+  }
+
+  Future<void> _showWebReleaseNotesOnce() async {
+    if (!kIsWeb) return;
+
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+
+      final preferences = SharedPreferencesAsync();
+      const preferenceKey = 'last_seen_web_release_version';
+
+      final lastSeenVersion = await preferences.getString(preferenceKey);
+
+      // Эту версию в данном браузере уже показывали.
+      if (lastSeenVersion == currentVersion) {
+        return;
+      }
+
+      final response = await Dio().get(
+        'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
+      );
+
+      final data = response.data is String
+          ? jsonDecode(response.data)
+          : response.data;
+
+      final publishedVersion = data['version']?.toString() ?? '';
+
+      // version.json мог обновиться раньше, чем был задеплоен новый Web.
+      // Показываем окно только для реально запущенной версии.
+      if (publishedVersion.isEmpty || publishedVersion != currentVersion) {
+        return;
+      }
+
+      await _showReleaseNotes();
+
+      // Записываем версию только после закрытия окна.
+      await preferences.setString(preferenceKey, currentVersion);
+    } catch (error, stackTrace) {
+      debugPrint('WEB RELEASE NOTES ERROR: $error');
+      debugPrint('$stackTrace');
+    }
+  }
+
+  Future<void> _showReleaseNotes() async {
+    try {
+      final response = await Dio().get(
+        'https://raw.githubusercontent.com/FlawlessC/watcher/main/version.json',
+      );
+
+      final data = response.data is String
+          ? jsonDecode(response.data)
+          : response.data;
+
+      final version = data['version']?.toString() ?? '';
+      final changelog = data['changelog']?.toString() ?? '';
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(
+              version.isEmpty
+                  ? context.l10n.whatsNew
+                  : context.l10n.whatsNewInVersion(version),
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 650, maxHeight: 500),
+              child: SizedBox(
+                width: 650,
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: SelectableText(
+                      changelog.isEmpty
+                          ? context.l10n.releaseInfoUnavailable
+                          : changelog
+                                .replaceAll('**New:**', '• ')
+                                .replaceAll('**Improved:**', '• ')
+                                .replaceAll('**Fixed:**', '• '),
+                      style: Theme.of(dialogContext).textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(context.l10n.close),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (error, stackTrace) {
+      debugPrint('RELEASE NOTES ERROR: $error');
+      debugPrint('$stackTrace');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.releaseInfoLoadError)),
+      );
     }
   }
 
@@ -171,9 +319,7 @@ class _AppState extends State<App> {
     if (kIsWeb) {
       if (manual && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Обновления APK доступны только на Android'),
-          ),
+          SnackBar(content: Text(context.l10n.apkUpdatesAndroidOnly)),
         );
       }
       return;
@@ -208,7 +354,7 @@ class _AppState extends State<App> {
         showUpdateDialog(apkUrl, changelog);
       } else if (manual && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Установлена актуальная версия')),
+          SnackBar(content: Text(context.l10n.latestVersionInstalled)),
         );
       }
     } catch (e) {
@@ -227,23 +373,27 @@ class _AppState extends State<App> {
   }
 
   Future<void> downloadAndInstall(String url) async {
+    final downloadStartedLog = context.l10n.logApkDownloadStarted;
+    final downloadedLog = context.l10n.logApkDownloaded;
+
     try {
       debugPrint("DOWNLOAD APK START: $url");
-      addLog("Начато скачивание APK");
+      addLog(downloadStartedLog);
+
       final dir = await getApplicationDocumentsDirectory();
       final filePath = "${dir.path}/update.apk";
 
       await Dio().download(url, filePath);
 
       debugPrint("DOWNLOAD APK FINISHED: $filePath");
-      addLog("APK скачан");
+      addLog(downloadedLog);
+
       final result = await OpenFile.open(
         filePath,
         type: "application/vnd.android.package-archive",
       );
 
       debugPrint("OPEN APK RESULT: ${result.type}");
-      addLog("APK скачан");
       debugPrint("OPEN APK MESSAGE: ${result.message}");
 
       if (result.type != ResultType.done) {
@@ -251,22 +401,21 @@ class _AppState extends State<App> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              "Не удалось открыть установщик APK: ${result.message}",
-            ),
+            content: Text(context.l10n.apkInstallerOpenError(result.message)),
           ),
         );
       }
     } catch (e, stack) {
       debugPrint("DOWNLOAD APK ERROR: $e");
-      addLog("Ошибка обновления: $e");
       debugPrint("$stack");
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Ошибка обновления: $e")));
+      addLog(context.l10n.logApkUpdateError(e.toString()));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.updateError(e.toString()))),
+      );
     }
   }
 
@@ -287,8 +436,10 @@ class _AppState extends State<App> {
               ),
               title: Text(
                 pendingUpdateVersion == null
-                    ? 'Доступно обновление'
-                    : 'Доступно обновление $pendingUpdateVersion',
+                    ? context.l10n.updateAvailable
+                    : context.l10n.updateAvailableVersion(
+                        pendingUpdateVersion!,
+                      ),
               ),
               content: SizedBox(
                 width: double.maxFinite,
@@ -312,7 +463,7 @@ class _AppState extends State<App> {
                       const SizedBox(height: 16),
                       const LinearProgressIndicator(),
                       const SizedBox(height: 8),
-                      const Text('Скачиваю APK...'),
+                      Text(context.l10n.downloadingApk),
                     ],
                   ],
                 ),
@@ -322,7 +473,7 @@ class _AppState extends State<App> {
                   onPressed: downloading
                       ? null
                       : () => Navigator.pop(dialogContext),
-                  child: const Text('Позже'),
+                  child: Text(context.l10n.later),
                 ),
                 FilledButton(
                   onPressed: downloading
@@ -364,7 +515,7 @@ class _AppState extends State<App> {
                             });
                           }
                         },
-                  child: const Text('Обновить'),
+                  child: Text(context.l10n.update),
                 ),
               ],
             );
@@ -374,20 +525,82 @@ class _AppState extends State<App> {
     );
   }
 
+  Future<void> _showLanguageDialog() async {
+    final currentLanguageCode = localeController.selectedLanguageCode;
+
+    final selectedLanguageCode = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        var temporaryLanguageCode = currentLanguageCode;
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(context.l10n.language),
+              content: RadioGroup<String>(
+                groupValue: temporaryLanguageCode,
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  setDialogState(() {
+                    temporaryLanguageCode = value;
+                  });
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<String>(
+                      value: 'system',
+                      title: Text(context.l10n.languageSystem),
+                    ),
+                    RadioListTile<String>(
+                      value: 'ru',
+                      title: Text(context.l10n.languageRussian),
+                    ),
+                    RadioListTile<String>(
+                      value: 'en',
+                      title: Text(context.l10n.languageEnglish),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(context.l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext, temporaryLanguageCode);
+                  },
+                  child: Text(context.l10n.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (selectedLanguageCode == null) return;
+
+    await localeController.setLanguageCode(selectedLanguageCode);
+  }
+
   Future<void> _confirmLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Выйти?'),
-        content: const Text('Вы действительно хотите выйти из аккаунта?'),
+        title: Text(context.l10n.logoutTitle),
+        content: Text(context.l10n.logoutDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Выйти'),
+            child: Text(context.l10n.logout),
           ),
         ],
       ),
@@ -403,6 +616,11 @@ class _AppState extends State<App> {
       context,
       MaterialPageRoute(
         builder: (_) => SettingsScreen(
+          currentVersion: appVersionLabel,
+          updateAvailable: pendingUpdateUrl != null,
+          availableVersion: pendingUpdateVersion,
+          onCheckForUpdate: () => checkForUpdate(manual: true),
+          onShowReleaseNotes: _showReleaseNotes,
           initialSection: initialSection,
           collectLogs: collectLogs,
           appLogs: appLogs,
@@ -441,8 +659,12 @@ class _AppState extends State<App> {
 
     checkMaintenanceMode();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      checkForUpdate();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (kIsWeb) {
+        await _showWebReleaseNotesOnce();
+      } else {
+        await checkForUpdate();
+      }
     });
   }
 
@@ -454,18 +676,16 @@ class _AppState extends State<App> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Новый список'),
+        title: Text(context.l10n.newList),
         content: TextField(
           controller: newCatCtrl,
-          decoration: const InputDecoration(
-            hintText: 'Название (например, Книги)',
-          ),
+          decoration: InputDecoration(hintText: context.l10n.listNameHint),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -486,7 +706,7 @@ class _AppState extends State<App> {
                 if (ctx.mounted) Navigator.pop(ctx);
               }
             },
-            child: const Text('Создать'),
+            child: Text(context.l10n.create),
           ),
         ],
       ),
@@ -500,14 +720,12 @@ class _AppState extends State<App> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Удалить список?'),
-        content: const Text(
-          'Категория будет удалена. Пункты из нее останутся, но эта категория будет убрана из их тегов.',
-        ),
+        title: Text(context.l10n.deleteListTitle),
+        content: Text(context.l10n.deleteListDescription),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -515,7 +733,7 @@ class _AppState extends State<App> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Удалить'),
+            child: Text(context.l10n.deleteSelected),
           ),
         ],
       ),
@@ -556,16 +774,16 @@ class _AppState extends State<App> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Категория удалена')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.categoryDeleted)));
     } catch (error, stackTrace) {
       debugPrint('DELETE CATEGORY ERROR: $error');
       debugPrint('$stackTrace');
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось удалить категорию')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.categoryDeleteError)));
     }
   }
 
@@ -608,7 +826,12 @@ class _AppState extends State<App> {
     final mainStatus = _resolveMainStatus(data);
     final isPast = _hasPastTag(data);
     final isLater = _hasLaterTag(data);
-
+    // Вкладка «Все» всегда содержит абсолютно все пункты.
+    // Фильтры «Показывать прошлое/потом» влияют только
+    // на основные списки: Будущее, Настоящее и Ещё раз.
+    if (requestedStatus == 'all') {
+      return true;
+    }
     if (requestedStatus == 'past') {
       return isPast;
     }
@@ -629,8 +852,6 @@ class _AppState extends State<App> {
     }
 
     switch (requestedStatus) {
-      case 'all':
-        return true;
       case 'future':
         return mainStatus == 'future';
       case 'present':
@@ -704,24 +925,27 @@ class _AppState extends State<App> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Редактировать пункт',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  context.l10n.editItem,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: ctrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Название',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.title,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: descCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Описание',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.description,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -731,23 +955,23 @@ class _AppState extends State<App> {
                       child: TextField(
                         controller: currentProgCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Сейчас',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.currentProgress,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text('из'),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(context.l10n.progressOf),
                     ),
                     Expanded(
                       child: TextField(
                         controller: totalProgCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Всего',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.totalProgress,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
@@ -759,8 +983,10 @@ class _AppState extends State<App> {
                       items:
                           ['серия', 'стр', 'гл', 'книга', 'сезон', 'часов', '-']
                               .map(
-                                (v) =>
-                                    DropdownMenuItem(value: v, child: Text(v)),
+                                (v) => DropdownMenuItem(
+                                  value: v,
+                                  child: Text(_localizedProgressUnit(v)),
+                                ),
                               )
                               .toList(),
                     ),
@@ -776,7 +1002,7 @@ class _AppState extends State<App> {
                       _updateItem(doc);
                       Navigator.pop(ctx);
                     },
-                    child: const Text('Сохранить'),
+                    child: Text(context.l10n.save),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -833,41 +1059,65 @@ class _AppState extends State<App> {
     });
   }
 
-  Future<void> _setSelectedServiceTag(String serviceTag) async {
+  Future<void> _toggleSelectedServiceTag(String serviceTag) async {
     if (_blockIfMaintenance()) return;
     if (selectedItemIds.isEmpty) return;
 
     try {
       final firestore = FirebaseFirestore.instance;
-      final batch = firestore.batch();
 
-      for (final documentId in selectedItemIds) {
-        final reference = firestore.collection('items').doc(documentId);
-        final snapshot = await reference.get();
+      final selectedDocuments = await Future.wait(
+        selectedItemIds.map(
+          (documentId) => firestore.collection('items').doc(documentId).get(),
+        ),
+      );
 
-        if (!snapshot.exists) continue;
+      final existingDocuments = selectedDocuments
+          .where((document) => document.exists && document.data() != null)
+          .toList();
 
-        final data = snapshot.data();
-        if (data == null) continue;
+      if (existingDocuments.isEmpty) {
+        _clearSelection();
+        return;
+      }
 
+      bool hasServiceTag(Map<String, dynamic> data) {
         final tags = List<String>.from(data['tags'] ?? const []);
 
-        // «Прошлое» и «Потом» взаимоисключающие.
+        if (serviceTag == 'Прошлое') {
+          return data['done'] == true ||
+              tags.contains('Прошлое') ||
+              tags.contains('Архив');
+        }
+
+        return tags.contains('Потом') || tags.contains('Отложено');
+      }
+
+      final shouldRemove = existingDocuments.every(
+        (document) => hasServiceTag(document.data()!),
+      );
+
+      final batch = firestore.batch();
+
+      for (final document in existingDocuments) {
+        final data = document.data()!;
+        final tags = List<String>.from(data['tags'] ?? const []);
+
+        // Чистим обе версии старых и новых служебных тегов.
         tags.remove('Прошлое');
         tags.remove('Потом');
-
-        // Также убираем названия старой модели.
         tags.remove('Архив');
         tags.remove('Отложено');
 
-        tags.add(serviceTag);
+        if (!shouldRemove) {
+          tags.add(serviceTag);
+        }
 
-        batch.update(reference, {
+        batch.update(document.reference, {
           'tags': tags,
 
-          // Поле done оставляем для совместимости
-          // со старыми версиями приложения.
-          'done': serviceTag == 'Прошлое',
+          // done пока сохраняем для совместимости со старыми версиями.
+          'done': !shouldRemove && serviceTag == 'Прошлое',
         });
       }
 
@@ -875,24 +1125,24 @@ class _AppState extends State<App> {
 
       if (!mounted) return;
 
-      final message = serviceTag == 'Прошлое'
-          ? 'Выбранные пункты перемещены в «Прошлое»'
-          : 'Выбранные пункты перемещены в «Потом»';
-
       _clearSelection();
+
+      final actionText = shouldRemove
+          ? context.l10n.bulkTagRemoved(serviceTag)
+          : context.l10n.bulkItemsMoved(serviceTag);
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ).showSnackBar(SnackBar(content: Text(actionText)));
     } catch (error, stackTrace) {
-      debugPrint('BULK STATUS UPDATE ERROR: $error');
+      debugPrint('BULK SERVICE TAG ERROR: $error');
       debugPrint('$stackTrace');
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось изменить выбранные пункты')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.bulkChangeError)));
     }
   }
 
@@ -905,12 +1155,12 @@ class _AppState extends State<App> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Удалить выбранные пункты?'),
-        content: Text('Будет удалено: $count. Это действие нельзя отменить.'),
+        title: Text(context.l10n.deleteSelectedItemsTitle),
+        content: Text(context.l10n.deleteSelectedItemsDescription(count)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -918,7 +1168,7 @@ class _AppState extends State<App> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Удалить'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -940,18 +1190,18 @@ class _AppState extends State<App> {
 
       _clearSelection();
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Удалено пунктов: $count')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.deletedItemsCount(count))),
+      );
     } catch (error, stackTrace) {
       debugPrint('BULK DELETE ERROR: $error');
       debugPrint('$stackTrace');
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось удалить выбранные пункты')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.bulkDeleteError)));
     }
   }
 
@@ -1026,24 +1276,27 @@ class _AppState extends State<App> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                const Text(
-                  'Добавить новый пункт',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  context.l10n.addItem,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: ctrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Название',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.title,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: descCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Описание',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.description,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1053,23 +1306,23 @@ class _AppState extends State<App> {
                       child: TextField(
                         controller: currentProgCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Сейчас',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.currentProgress,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text('из'),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(context.l10n.progressOf),
                     ),
                     Expanded(
                       child: TextField(
                         controller: totalProgCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Всего',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.totalProgress,
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
@@ -1091,8 +1344,10 @@ class _AppState extends State<App> {
                                 'ачивок',
                               ]
                               .map(
-                                (v) =>
-                                    DropdownMenuItem(value: v, child: Text(v)),
+                                (v) => DropdownMenuItem(
+                                  value: v,
+                                  child: Text(_localizedProgressUnit(v)),
+                                ),
                               )
                               .toList(),
                     ),
@@ -1111,7 +1366,7 @@ class _AppState extends State<App> {
                       _add();
                       Navigator.pop(ctx);
                     },
-                    child: const Text('Добавить в список'),
+                    child: Text(context.l10n.addToList),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1142,9 +1397,9 @@ class _AppState extends State<App> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Основной список:',
-              style: TextStyle(
+            Text(
+              context.l10n.mainList,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -1157,7 +1412,7 @@ class _AppState extends State<App> {
               runSpacing: 8,
               children: [
                 ChoiceChip(
-                  label: const Text('Будущее'),
+                  label: Text(context.l10n.future),
                   selected: selectedMainStatus == 'future',
                   onSelected: (_) {
                     setSheetState(() {
@@ -1166,7 +1421,7 @@ class _AppState extends State<App> {
                   },
                 ),
                 ChoiceChip(
-                  label: const Text('Настоящее'),
+                  label: Text(context.l10n.present),
                   selected: selectedMainStatus == 'present',
                   onSelected: (_) {
                     setSheetState(() {
@@ -1175,7 +1430,7 @@ class _AppState extends State<App> {
                   },
                 ),
                 ChoiceChip(
-                  label: const Text('Ещё раз'),
+                  label: Text(context.l10n.again),
                   selected: selectedMainStatus == 'again',
                   onSelected: (_) {
                     setSheetState(() {
@@ -1191,9 +1446,9 @@ class _AppState extends State<App> {
               child: Divider(),
             ),
 
-            const Text(
-              'Скрыть в:',
-              style: TextStyle(
+            Text(
+              context.l10n.hideIn,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -1206,7 +1461,7 @@ class _AppState extends State<App> {
               runSpacing: 8,
               children: [
                 FilterChip(
-                  label: const Text('Прошлое'),
+                  label: Text(context.l10n.past),
                   selected: selected.contains('Прошлое'),
                   showCheckmark: true,
                   onSelected: (value) {
@@ -1221,7 +1476,7 @@ class _AppState extends State<App> {
                   },
                 ),
                 FilterChip(
-                  label: const Text('Потом'),
+                  label: Text(context.l10n.later),
                   selected: selected.contains('Потом'),
                   showCheckmark: true,
                   onSelected: (value) {
@@ -1243,9 +1498,9 @@ class _AppState extends State<App> {
               child: Divider(),
             ),
 
-            const Text(
-              'Категории:',
-              style: TextStyle(
+            Text(
+              context.l10n.categories,
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey,
@@ -1254,7 +1509,7 @@ class _AppState extends State<App> {
             const SizedBox(height: 8),
 
             if (categories.isEmpty)
-              const Text('Категорий пока нет. Их можно создать в боковом меню.')
+              Text(context.l10n.noCategoriesHint)
             else
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 220),
@@ -1330,8 +1585,34 @@ class _AppState extends State<App> {
 
           return matchesStatus && matchesCategory && matchesSearch;
         }).toList();
+        if (status == 'all') {
+          docs.sort((first, second) {
+            final firstData = first.data() as Map<String, dynamic>;
+            final secondData = second.data() as Map<String, dynamic>;
 
-        if (docs.isEmpty) return const Center(child: Text('Ничего не найдено'));
+            final firstIsPast = _hasPastTag(firstData);
+            final secondIsPast = _hasPastTag(secondData);
+
+            // Обычные карточки выше, прошлое — ниже.
+            if (firstIsPast != secondIsPast) {
+              return firstIsPast ? 1 : -1;
+            }
+
+            // Внутри каждой группы сохраняем порядок:
+            // самые новые сверху.
+            final firstTime = firstData['time'] is int
+                ? firstData['time'] as int
+                : 0;
+            final secondTime = secondData['time'] is int
+                ? secondData['time'] as int
+                : 0;
+
+            return secondTime.compareTo(firstTime);
+          });
+        }
+        if (docs.isEmpty) {
+          return Center(child: Text(context.l10n.nothingFound));
+        }
 
         return ListView.builder(
           itemCount: docs.length,
@@ -1432,7 +1713,7 @@ class _AppState extends State<App> {
             padding: const EdgeInsets.only(top: 6),
 
             child: Text(
-              'Прогресс: ${data['cur'] ?? 0}/${data['total'] ?? 0} ${data['unit'] ?? ''}\n${tags.join(", ")}',
+              '${context.l10n.itemProgress((data['cur'] ?? 0).toString(), (data['total'] ?? 0).toString(), _localizedProgressUnit((data['unit'] ?? '').toString()))}\n${tags.map((tag) => _localizedTag(tag.toString())).join(", ")}',
             ),
           ),
 
@@ -1491,13 +1772,9 @@ class _AppState extends State<App> {
 
     // 3. Если после всех фильтров список пуст
     if (filteredDocs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'В текущем отфильтрованном списке нет подходящих элементов',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.randomListEmpty)));
       return;
     }
 
@@ -1508,15 +1785,15 @@ class _AppState extends State<App> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Случайный выбор'),
+        title: Text(context.l10n.randomChoice),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Как насчет этого?'),
+            Text(context.l10n.howAboutThis),
             const SizedBox(height: 10),
             Text(
-              randomDoc.get('t') ?? 'Без названия',
+              randomDoc.get('t') ?? context.l10n.untitled,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             Builder(
@@ -1540,14 +1817,14 @@ class _AppState extends State<App> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Понятно'),
+            child: Text(context.l10n.close),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
               _showRandomItem(currentStatus);
             },
-            child: const Text('Другой'),
+            child: Text(context.l10n.another),
           ),
         ],
       ),
@@ -1564,7 +1841,11 @@ class _AppState extends State<App> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text("Ошибка: ${snapshot.error}"));
+            return Center(
+              child: Text(
+                context.l10n.errorWithDetails(snapshot.error.toString()),
+              ),
+            );
           }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -1586,9 +1867,9 @@ class _AppState extends State<App> {
                 color: Colors.deepPurple,
                 padding: const EdgeInsets.all(20),
                 alignment: Alignment.bottomLeft,
-                child: const Text(
-                  'Мои Списки',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.myLists,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -1605,9 +1886,9 @@ class _AppState extends State<App> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "КАТЕГОРИИ",
-                      style: TextStyle(
+                    Text(
+                      context.l10n.categories.toUpperCase(),
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: Colors.grey,
@@ -1625,7 +1906,7 @@ class _AppState extends State<App> {
               ),
               Expanded(
                 child: docs.isEmpty
-                    ? const Center(child: Text("Категорий пока нет"))
+                    ? Center(child: Text(context.l10n.noCategories))
                     : ReorderableListView(
                         onReorder: (oldIdx, newIdx) async {
                           if (_blockIfMaintenance()) return;
@@ -1705,15 +1986,15 @@ class _AppState extends State<App> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Редактировать список'),
+        title: Text(context.l10n.editList),
         content: TextField(
           controller: editCtrl,
-          decoration: const InputDecoration(hintText: 'Новое название'),
+          decoration: InputDecoration(hintText: context.l10n.newName),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -1757,7 +2038,7 @@ class _AppState extends State<App> {
               }
             },
 
-            child: const Text('Сохранить'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),
@@ -1790,14 +2071,14 @@ class _AppState extends State<App> {
 
   String _selectedFiltersLabel() {
     if (selectedFilters.contains('Все')) {
-      return 'Все';
+      return context.l10n.all;
     }
 
     if (selectedFilters.length == 1) {
       return selectedFilters.first;
     }
 
-    return 'Выбрано: ${selectedFilters.length}';
+    return context.l10n.selectedCount(selectedFilters.length);
   }
 
   Future<void> _showFiltersSheet(List<String> categories) async {
@@ -1851,13 +2132,13 @@ class _AppState extends State<App> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Фильтры',
+                    context.l10n.filters,
                     style: Theme.of(sheetContext).textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Можно выбрать несколько категорий одновременно.',
+                    context.l10n.filtersDescription,
                     style: Theme.of(sheetContext).textTheme.bodyMedium
                         ?.copyWith(
                           color: Theme.of(
@@ -1868,10 +2149,8 @@ class _AppState extends State<App> {
                   const SizedBox(height: 20),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Показывать прошлое'),
-                    subtitle: const Text(
-                      'Добавлять пункты из «Прошлого» в основные списки и общий поиск.',
-                    ),
+                    title: Text(context.l10n.showPast),
+                    subtitle: Text(context.l10n.showPastDescription),
                     value: temporaryIncludePast,
                     onChanged: (value) {
                       setSheetState(() {
@@ -1882,10 +2161,8 @@ class _AppState extends State<App> {
 
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Показывать потом'),
-                    subtitle: const Text(
-                      'Добавлять отложенные пункты в основные списки и общий поиск.',
-                    ),
+                    title: Text(context.l10n.showLater),
+                    subtitle: Text(context.l10n.showLaterDescription),
                     value: temporaryIncludeLater,
                     onChanged: (value) {
                       setSheetState(() {
@@ -1896,7 +2173,7 @@ class _AppState extends State<App> {
 
                   const Divider(height: 28),
                   FilterChip(
-                    label: const Text('Все'),
+                    label: Text(context.l10n.all),
                     selected: allSelected,
                     showCheckmark: true,
                     onSelected: (_) => selectAll(),
@@ -1934,7 +2211,7 @@ class _AppState extends State<App> {
                       Expanded(
                         child: OutlinedButton(
                           onPressed: selectAll,
-                          child: const Text('Сбросить'),
+                          child: Text(context.l10n.reset),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1949,7 +2226,7 @@ class _AppState extends State<App> {
 
                             Navigator.pop(sheetContext);
                           },
-                          child: const Text('Применить'),
+                          child: Text(context.l10n.apply),
                         ),
                       ),
                     ],
@@ -1982,8 +2259,8 @@ class _AppState extends State<App> {
             children: [
               // Поле поиска
               TextField(
-                decoration: const InputDecoration(
-                  hintText: 'Поиск...',
+                decoration: InputDecoration(
+                  hintText: context.l10n.search,
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -2031,7 +2308,7 @@ class _AppState extends State<App> {
                           ),
                           const SizedBox(width: 6),
                           IconButton(
-                            tooltip: 'Фильтры',
+                            tooltip: context.l10n.filters,
                             icon: Badge(
                               isLabelVisible: !isAllSelected,
                               label: Text(
@@ -2057,17 +2334,17 @@ class _AppState extends State<App> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           FilterChip(
-                            label: const Text(
-                              'Все',
-                              style: TextStyle(fontSize: 12),
+                            label: Text(
+                              context.l10n.all,
+                              style: const TextStyle(fontSize: 12),
                             ),
                             selected: isAllSelected,
                             onSelected: (_) => _selectAllFilters(),
                           ),
                           FilterChip(
-                            label: const Text(
-                              'Показывать прошлое',
-                              style: TextStyle(fontSize: 12),
+                            label: Text(
+                              context.l10n.showPast,
+                              style: const TextStyle(fontSize: 12),
                             ),
                             selected: includePastInMainResults,
                             showCheckmark: true,
@@ -2079,9 +2356,9 @@ class _AppState extends State<App> {
                           ),
 
                           FilterChip(
-                            label: const Text(
-                              'Показывать потом',
-                              style: TextStyle(fontSize: 12),
+                            label: Text(
+                              context.l10n.showLater,
+                              style: const TextStyle(fontSize: 12),
                             ),
                             selected: includeLaterInMainResults,
                             showCheckmark: true,
@@ -2111,21 +2388,21 @@ class _AppState extends State<App> {
             ],
           ),
 
-          bottom: const TabBar(
+          bottom: TabBar(
             isScrollable: true,
             tabs: [
-              Tab(text: 'Все'),
-              Tab(text: 'Будущее'),
-              Tab(text: 'Настоящее'),
-              Tab(text: 'Ещё раз'),
-              Tab(text: 'Прошлое'),
-              Tab(text: 'Потом'),
+              Tab(text: context.l10n.all),
+              Tab(text: context.l10n.future),
+              Tab(text: context.l10n.present),
+              Tab(text: context.l10n.again),
+              Tab(text: context.l10n.past),
+              Tab(text: context.l10n.later),
             ],
           ),
           actions: [
             if (!isCompact)
               IconButton(
-                tooltip: 'Случайный выбор',
+                tooltip: context.l10n.randomChoice,
                 icon: const Icon(Icons.casino),
                 onPressed: () {
                   final tabs = [
@@ -2143,6 +2420,7 @@ class _AppState extends State<App> {
             // Исправленный вызов рандома (Пункт 1
             if (!isCompact)
               IconButton(
+                tooltip: context.l10n.changeTheme,
                 icon: Icon(
                   themeNotifier.value == ThemeMode.light
                       ? Icons.dark_mode
@@ -2170,9 +2448,20 @@ class _AppState extends State<App> {
 
                     final profileName = profile?['displayName']?.toString();
                     final profileEmail = profile?['email']?.toString();
-                    final shownName = profileName?.trim().isNotEmpty == true
+
+                    final hasLegacyGuestName =
+                        user?.isAnonymous == true &&
+                        profileName?.trim().startsWith('Гость ') == true;
+
+                    final shownName =
+                        profileName?.trim().isNotEmpty == true &&
+                            !hasLegacyGuestName
                         ? profileName!.trim()
-                        : UserProfileService.instance.fallbackName(user);
+                        : UserProfileService.instance.fallbackName(
+                            user,
+                            guestName: context.l10n.accountGuest,
+                            unnamedName: context.l10n.accountUnnamed,
+                          );
 
                     final shownEmail = profileEmail?.trim().isNotEmpty == true
                         ? profileEmail!.trim()
@@ -2248,8 +2537,10 @@ class _AppState extends State<App> {
                           _openSettingsScreen(initialSection: 'account');
                         } else if (value == 'settings') {
                           _openSettingsScreen();
-                        } else if (value == 'check_update') {
-                          await checkForUpdate(manual: true);
+                        } else if (value == 'language') {
+                          await _showLanguageDialog();
+                        } else if (value == 'whats_new') {
+                          await _showReleaseNotes();
                         } else if (value == 'update') {
                           if (pendingUpdateUrl != null) {
                             showUpdateDialog(
@@ -2283,7 +2574,7 @@ class _AppState extends State<App> {
                                 ),
                               if (appVersionLabel.isNotEmpty)
                                 Text(
-                                  'Версия $appVersionLabel',
+                                  context.l10n.versionLabel(appVersionLabel),
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey,
@@ -2295,74 +2586,84 @@ class _AppState extends State<App> {
                         ),
 
                         if (pendingUpdateUrl != null)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'update',
                             child: Row(
                               children: [
-                                Icon(Icons.system_update, size: 18),
-                                SizedBox(width: 12),
-                                Text('Обновить приложение'),
+                                const Icon(Icons.system_update, size: 18),
+                                const SizedBox(width: 12),
+                                Text(context.l10n.updateApp),
                               ],
                             ),
                           ),
                         if (isCompact)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'random',
                             child: Row(
                               children: [
-                                Icon(Icons.casino, size: 18),
-                                SizedBox(width: 8),
-                                Text('Рандом'),
+                                const Icon(Icons.casino, size: 18),
+                                const SizedBox(width: 8),
+                                Text(context.l10n.random),
                               ],
                             ),
                           ),
 
                         if (isCompact)
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'theme',
                             child: Row(
                               children: [
-                                Icon(Icons.dark_mode, size: 18),
-                                SizedBox(width: 8),
-                                Text('Сменить тему'),
+                                const Icon(Icons.dark_mode, size: 18),
+                                const SizedBox(width: 8),
+                                Text(context.l10n.changeTheme),
                               ],
                             ),
                           ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'settings',
                           child: Row(
                             children: [
-                              Icon(Icons.settings, size: 18),
-                              SizedBox(width: 8),
-                              Text('Настройки'),
+                              const Icon(Icons.settings, size: 18),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.settings),
                             ],
                           ),
                         ),
-                        const PopupMenuItem(
-                          value: 'check_update',
+                        PopupMenuItem(
+                          value: 'language',
                           child: Row(
                             children: [
-                              Icon(Icons.refresh, size: 18),
-                              SizedBox(width: 8),
-                              Text('Проверить обновления'),
+                              const Icon(Icons.language, size: 18),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.language),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'whats_new',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.new_releases_outlined, size: 18),
+                              const SizedBox(width: 8),
+                              Text(context.l10n.whatsNew),
                             ],
                           ),
                         ),
                         const PopupMenuDivider(),
 
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'logout',
                           child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.logout,
                                 size: 18,
                                 color: Colors.redAccent,
                               ),
-                              SizedBox(width: 8),
+                              const SizedBox(width: 8),
                               Text(
-                                'Выйти',
-                                style: TextStyle(color: Colors.redAccent),
+                                context.l10n.logout,
+                                style: const TextStyle(color: Colors.redAccent),
                               ),
                             ],
                           ),
@@ -2375,7 +2676,7 @@ class _AppState extends State<App> {
             ),
             if (!isCompact)
               IconButton(
-                tooltip: 'Выйти',
+                tooltip: context.l10n.logout,
                 icon: const Icon(Icons.logout),
                 onPressed: _confirmLogout,
               ),
@@ -2397,13 +2698,15 @@ class _AppState extends State<App> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Выбрано: ${selectedItemIds.length}',
+                                context.l10n.selectedItems(
+                                  selectedItemIds.length,
+                                ),
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w700),
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Отмена',
+                              tooltip: context.l10n.cancel,
                               onPressed: _clearSelection,
                               icon: const Icon(Icons.close),
                             ),
@@ -2416,16 +2719,16 @@ class _AppState extends State<App> {
                             children: [
                               FilledButton.tonalIcon(
                                 onPressed: () =>
-                                    _setSelectedServiceTag('Потом'),
+                                    _toggleSelectedServiceTag('Потом'),
                                 icon: const Icon(Icons.schedule_outlined),
-                                label: const Text('Потом'),
+                                label: Text(context.l10n.later),
                               ),
                               const SizedBox(width: 8),
                               FilledButton.tonalIcon(
                                 onPressed: () =>
-                                    _setSelectedServiceTag('Прошлое'),
+                                    _toggleSelectedServiceTag('Прошлое'),
                                 icon: const Icon(Icons.history_outlined),
-                                label: const Text('Прошлое'),
+                                label: Text(context.l10n.past),
                               ),
                               const SizedBox(width: 8),
                               OutlinedButton.icon(
@@ -2434,16 +2737,18 @@ class _AppState extends State<App> {
                                   Icons.delete_outline,
                                   color: Colors.redAccent,
                                 ),
-                                label: const Text(
-                                  'Удалить',
-                                  style: TextStyle(color: Colors.redAccent),
+                                label: Text(
+                                  context.l10n.deleteSelected,
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               TextButton.icon(
                                 onPressed: _clearSelection,
                                 icon: const Icon(Icons.close),
-                                label: const Text('Отмена'),
+                                label: Text(context.l10n.cancel),
                               ),
                             ],
                           ),

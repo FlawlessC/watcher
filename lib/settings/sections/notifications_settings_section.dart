@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n_extension.dart';
+
 class NotificationsSettingsSection extends StatefulWidget {
   const NotificationsSettingsSection({
     super.key,
@@ -26,9 +28,7 @@ class _NotificationsSettingsSectionState
   }
 
   @override
-  void didUpdateWidget(
-    covariant NotificationsSettingsSection oldWidget,
-  ) {
+  void didUpdateWidget(covariant NotificationsSettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.showUpdateBadge != widget.showUpdateBadge) {
@@ -44,10 +44,10 @@ class _NotificationsSettingsSectionState
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
           child: Text(
-            'Уведомления',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            context.l10n.notifications,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
         SwitchListTile(
@@ -55,13 +55,8 @@ class _NotificationsSettingsSectionState
             horizontal: 24,
             vertical: 8,
           ),
-          title: const Text(
-            'Показывать уведомление об обновлении',
-          ),
-          subtitle: const Text(
-            'Если выключено, красная точка на иконке профиля '
-            'не будет появляться.',
-          ),
+          title: Text(context.l10n.notificationsShowUpdate),
+          subtitle: Text(context.l10n.notificationsShowUpdateDescription),
           value: showUpdateBadge,
           onChanged: (value) {
             setState(() => showUpdateBadge = value);

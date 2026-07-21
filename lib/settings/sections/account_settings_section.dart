@@ -6,13 +6,13 @@ import '../widgets/copyable_setting_tile.dart';
 import '../widgets/editable_setting_tile.dart';
 import '../widgets/setting_tile.dart';
 import '../widgets/settings_group.dart';
+import '../../l10n/l10n_extension.dart';
 
 class AccountSettingsSection extends StatefulWidget {
   const AccountSettingsSection({super.key});
 
   @override
-  State<AccountSettingsSection> createState() =>
-      _AccountSettingsSectionState();
+  State<AccountSettingsSection> createState() => _AccountSettingsSectionState();
 }
 
 class _AccountSettingsSectionState extends State<AccountSettingsSection> {
@@ -25,9 +25,9 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
       case 'email':
         return 'Email';
       case 'anonymous':
-        return 'Гость';
+        return context.l10n.accountGuest;
       default:
-        return 'Неизвестно';
+        return context.l10n.accountUnknownProvider;
     }
   }
 
@@ -35,16 +35,16 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Выйти?'),
-        content: const Text('Вы действительно хотите выйти из аккаунта?'),
+        title: Text(context.l10n.accountSignOutQuestion),
+        content: Text(context.l10n.accountSignOutConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Выйти'),
+            child: Text(context.l10n.accountSignOut),
           ),
         ],
       ),
@@ -61,15 +61,12 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Удалить аккаунт?'),
-        content: const Text(
-          'Аккаунт будет отключён сразу, но окончательно удалится только через 14 дней.\n\n'
-          'До этого момента его можно будет восстановить.',
-        ),
+        title: Text(context.l10n.accountDeleteQuestion),
+        content: Text(context.l10n.accountDeleteExplanation),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -77,7 +74,7 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Удалить'),
+            child: Text(context.l10n.accountDelete),
           ),
         ],
       ),
@@ -122,9 +119,7 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
   }
 
   void _showComingSoon(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Widget _buildProfileHeader({
@@ -154,8 +149,8 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
           Text(
             '@$username',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 20),
           const Divider(indent: 24, endIndent: 24),
@@ -178,7 +173,7 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
               child: OutlinedButton.icon(
                 onPressed: _confirmLogout,
                 icon: const Icon(Icons.logout),
-                label: const Text('Выйти'),
+                label: Text(context.l10n.accountSignOut),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -197,13 +192,10 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: _confirmDeleteAccount,
-                icon: const Icon(
-                  Icons.delete_forever,
-                  color: Colors.red,
-                ),
-                label: const Text(
-                  'Удалить аккаунт',
-                  style: TextStyle(color: Colors.red),
+                icon: const Icon(Icons.delete_forever, color: Colors.red),
+                label: Text(
+                  context.l10n.accountDeleteAccount,
+                  style: const TextStyle(color: Colors.red),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.red),
@@ -224,11 +216,9 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
   @override
   Widget build(BuildContext context) {
     if (user == null) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(
-          child: Text('Пользователь не найден'),
-        ),
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(child: Text(context.l10n.accountUserNotFound)),
       );
     }
 
@@ -242,7 +232,7 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
           return Padding(
             padding: const EdgeInsets.all(24),
             child: Center(
-              child: Text('Не удалось загрузить аккаунт: ${snapshot.error}'),
+              child: Text(context.l10n.accountLoadFailed('${snapshot.error}')),
             ),
           );
         }
@@ -250,124 +240,112 @@ class _AccountSettingsSectionState extends State<AccountSettingsSection> {
         if (!snapshot.hasData) {
           return const Padding(
             padding: EdgeInsets.all(32),
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: Center(child: CircularProgressIndicator()),
           );
         }
 
         final profile = snapshot.data?.data();
 
         final nickname =
-            profile?['displayName']?.toString() ?? 'Без имени';
-        final watcherId =
-            profile?['accountNumber']?.toString() ?? '—';
-        final username =
-            profile?['username']?.toString() ?? '—';
-        final email =
-            profile?['email']?.toString() ?? '—';
-        final provider =
-            profile?['provider']?.toString() ?? 'unknown';
+            profile?['displayName']?.toString() ?? context.l10n.accountUnnamed;
+        final watcherId = profile?['accountNumber']?.toString() ?? '—';
+        final username = profile?['username']?.toString() ?? '—';
+        final email = profile?['email']?.toString() ?? '—';
+        final provider = profile?['provider']?.toString() ?? 'unknown';
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildProfileHeader(
-              nickname: nickname,
-              username: username,
-            ),
+            _buildProfileHeader(nickname: nickname, username: username),
 
             SettingsGroup(
-              title: 'Основная информация',
+              title: context.l10n.accountMainInformation,
               children: [
                 CopyableSettingTile(
-                  title: 'Watcher ID',
+                  title: context.l10n.accountWatcherId,
                   value: watcherId,
-                  copyMessage: 'Watcher ID скопирован',
+                  copyMessage: context.l10n.accountWatcherIdCopied,
                 ),
                 CopyableSettingTile(
-                  title: 'Логин',
+                  title: context.l10n.accountLogin,
                   value: '@$username',
-                  copyMessage: 'Логин скопирован',
+                  copyMessage: context.l10n.accountLoginCopied,
                 ),
               ],
             ),
 
             SettingsGroup(
-              title: 'Личные данные',
+              title: context.l10n.accountPersonalData,
               children: [
                 EditableSettingTile(
-                  title: 'Ник',
+                  title: context.l10n.accountNickname,
                   value: nickname,
-                  confirmTitle: 'Изменить ник?',
-                  confirmText:
-                      'Новый ник будет отображаться в приложении.',
+                  confirmTitle: context.l10n.accountChangeNicknameQuestion,
+                  confirmText: context.l10n.accountChangeNicknameExplanation,
                   onSave: _saveNickname,
                 ),
                 EditableSettingTile(
-                  title: 'Email',
+                  title: context.l10n.authEmail,
                   value: email,
                   keyboardType: TextInputType.emailAddress,
-                  confirmTitle: 'Изменить email?',
-                  confirmText:
-                      'Почта будет изменена в профиле. Перепривязку Firebase Auth добавим отдельным шагом.',
+                  confirmTitle: context.l10n.accountChangeEmailQuestion,
+                  confirmText: context.l10n.accountChangeEmailExplanation,
                   onSave: _saveEmail,
                 ),
               ],
             ),
 
             SettingsGroup(
-              title: 'Безопасность',
+              title: context.l10n.accountSecurity,
               children: [
                 SettingTile(
-                  title: 'Пароль',
+                  title: context.l10n.accountPassword,
                   value: provider == 'email'
-                      ? 'Изменить пароль'
-                      : 'Доступно для email-аккаунтов',
+                      ? context.l10n.accountChangePassword
+                      : context.l10n.accountPasswordEmailOnly,
                   onTap: provider == 'email'
                       ? () => _showComingSoon(
-                            'Смену пароля добавим позже',
-                          )
+                          context.l10n.accountPasswordComingSoon,
+                        )
                       : null,
                 ),
                 SettingTile(
-                  title: 'Активные устройства',
-                  value: 'Появится позже',
+                  title: context.l10n.accountActiveDevices,
+                  value: context.l10n.accountComingSoon,
                   onTap: () => _showComingSoon(
-                    'Активные устройства добавим позже',
+                    context.l10n.accountActiveDevicesComingSoon,
                   ),
                 ),
                 SettingTile(
-                  title: 'Двухфакторная защита',
-                  value: 'Появится позже',
-                  onTap: () => _showComingSoon(
-                    '2FA добавим позже',
-                  ),
+                  title: context.l10n.accountTwoFactorProtection,
+                  value: context.l10n.accountComingSoon,
+                  onTap: () =>
+                      _showComingSoon(context.l10n.accountTwoFactorComingSoon),
                 ),
               ],
             ),
 
             SettingsGroup(
-              title: 'Авторизация',
+              title: context.l10n.accountAuthorization,
               children: [
                 SettingTile(
-                  title: 'Тип входа',
+                  title: context.l10n.accountSignInType,
                   value: _providerLabel(provider),
                 ),
                 if (provider == 'email' || provider == 'anonymous')
                   SettingTile(
                     title: 'Google',
-                    value: 'Привязать Google',
+                    value: context.l10n.accountLinkGoogle,
                     onTap: () => _showComingSoon(
-                      'Привязку Google добавим позже',
+                      context.l10n.accountLinkGoogleComingSoon,
                     ),
                   ),
                 if (provider == 'anonymous')
                   SettingTile(
-                    title: 'Email',
-                    value: 'Привязать Email',
+                    title: context.l10n.authEmail,
+                    value: context.l10n.accountLinkEmail,
                     onTap: () => _showComingSoon(
-                      'Привязку Email добавим позже',
+                      context.l10n.accountLinkEmailComingSoon,
                     ),
                   ),
               ],

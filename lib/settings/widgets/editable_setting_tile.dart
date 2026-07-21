@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'setting_tile.dart';
+import '../../l10n/l10n_extension.dart';
 
 class EditableSettingTile extends StatefulWidget {
   const EditableSettingTile({
@@ -61,9 +62,7 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
 
     if (newValue.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Значение должно быть не короче 2 символов'),
-        ),
+        SnackBar(content: Text(context.l10n.settingValueTooShort)),
       );
       return;
     }
@@ -76,11 +75,11 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Отмена'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Изменить'),
+            child: Text(context.l10n.settingEdit),
           ),
         ],
       ),
@@ -101,20 +100,16 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
         _saving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Изменения сохранены'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.settingChangesSaved)));
     } catch (e) {
       if (!mounted) return;
 
       setState(() => _saving = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Не удалось сохранить: $e'),
-        ),
+        SnackBar(content: Text(context.l10n.settingSaveFailed('$e'))),
       );
     }
   }
@@ -128,10 +123,7 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
   Widget build(BuildContext context) {
     if (_editing) {
       return Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -158,12 +150,12 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  tooltip: 'Отмена',
+                  tooltip: context.l10n.cancel,
                   onPressed: _saving ? null : _cancel,
                   icon: const Icon(Icons.close),
                 ),
                 IconButton(
-                  tooltip: 'Сохранить',
+                  tooltip: context.l10n.save,
                   onPressed: _saving ? null : _save,
                   icon: _saving
                       ? const SizedBox(
@@ -181,13 +173,13 @@ class _EditableSettingTileState extends State<EditableSettingTile> {
     }
 
     return SettingTile(
-  title: widget.title,
-  value: widget.value,
-  trailing: IconButton(
-    tooltip: 'Изменить',
-    onPressed: () => setState(() => _editing = true),
-    icon: const Icon(Icons.edit),
-  ),
-);
+      title: widget.title,
+      value: widget.value,
+      trailing: IconButton(
+        tooltip: context.l10n.settingEdit,
+        onPressed: () => setState(() => _editing = true),
+        icon: const Icon(Icons.edit),
+      ),
+    );
   }
 }

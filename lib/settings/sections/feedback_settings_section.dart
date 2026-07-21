@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../l10n/l10n_extension.dart';
 
 enum FeedbackType { bug, improvement, other }
 
@@ -21,7 +22,7 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
   FeedbackType _selectedType = FeedbackType.bug;
 
   bool _sending = false;
-  String _technicalInfo = 'Загрузка...';
+  String _technicalInfo = '';
 
   @override
   void initState() {
@@ -38,11 +39,11 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
   String _feedbackTypeLabel(FeedbackType type) {
     switch (type) {
       case FeedbackType.bug:
-        return 'Баг';
+        return context.l10n.feedbackBug;
       case FeedbackType.improvement:
-        return 'Предложение';
+        return context.l10n.feedbackImprovement;
       case FeedbackType.other:
-        return 'Другое';
+        return context.l10n.feedbackOther;
     }
   }
 
@@ -50,24 +51,23 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
 
+      if (!mounted) return;
+
       final info =
           '''
-Приложение: ${packageInfo.appName}
-Версия: ${packageInfo.version}+${packageInfo.buildNumber}
-Платформа: ${kIsWeb ? 'Web' : defaultTargetPlatform.name}
+${context.l10n.feedbackVersion}: ${packageInfo.version}+${packageInfo.buildNumber}
+${context.l10n.feedbackPlatform}: ${kIsWeb ? 'Web' : defaultTargetPlatform.name}
 '''
               .trim();
-
-      if (!mounted) return;
 
       setState(() {
         _technicalInfo = info;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       setState(() {
-        _technicalInfo = 'Не удалось получить информацию';
+        _technicalInfo = context.l10n.feedbackLoadFailed;
       });
     }
   }
@@ -77,9 +77,9 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Скопировано')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.feedbackCopied)));
   }
 
   Future<void> _sendFeedback() async {
@@ -88,18 +88,14 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
 
     if (message.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Опиши проблему или предложение хотя бы в 10 символах'),
-        ),
+        SnackBar(content: Text(context.l10n.feedbackMessageTooShort)),
       );
       return;
     }
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Для отправки обращения нужно войти в аккаунт'),
-        ),
+        SnackBar(content: Text(context.l10n.feedbackLoginRequired)),
       );
       return;
     }
@@ -138,9 +134,9 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
         _selectedType = FeedbackType.bug;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Сообщение отправлено. Спасибо!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.feedbackSent)));
     } on FirebaseException catch (e) {
       if (!mounted) return;
 
@@ -150,8 +146,8 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
         SnackBar(
           content: Text(
             e.code == 'permission-denied'
-                ? 'Нет разрешения на отправку. Сообщи по почте о проблеме.'
-                : 'Не удалось отправить сообщение',
+                ? context.l10n.feedbackPermissionDenied
+                : context.l10n.feedbackSendFailed,
           ),
         ),
       );
@@ -162,7 +158,7 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось отправить сообщение')),
+        SnackBar(content: Text(context.l10n.feedbackSendFailed)),
       );
     } finally {
       if (mounted) {
@@ -177,14 +173,14 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
       padding: const EdgeInsets.all(24),
       children: [
         Text(
-          'Обратная связь',
+          context.l10n.feedbackTitle,
           style: Theme.of(
             context,
           ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
-          'Расскажи об ошибке или предложи улучшение для Watcher.',
+          context.l10n.feedbackSubtitle,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -193,8 +189,8 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
 
         DropdownButtonFormField<FeedbackType>(
           initialValue: _selectedType,
-          decoration: const InputDecoration(
-            labelText: 'Тип обращения',
+          decoration: InputDecoration(
+            labelText: context.l10n.feedbackType,
             border: OutlineInputBorder(),
           ),
           items: [
@@ -223,10 +219,9 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
           minLines: 6,
           maxLines: 12,
           maxLength: 2000,
-          decoration: const InputDecoration(
-            labelText: 'Описание',
-            hintText:
-                'Что произошло, чего ты ожидал(а) и как это можно повторить?',
+          decoration: InputDecoration(
+            labelText: context.l10n.feedbackDescription,
+            hintText: context.l10n.feedbackDescriptionHint,
             alignLabelWithHint: true,
             border: OutlineInputBorder(),
           ),
@@ -243,7 +238,9 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.send_outlined),
-          label: Text(_sending ? 'Открываю отправку...' : 'Отправить'),
+          label: Text(
+            _sending ? context.l10n.feedbackSending : context.l10n.feedbackSend,
+          ),
         ),
 
         const SizedBox(height: 32),
@@ -254,14 +251,14 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
           children: [
             Expanded(
               child: Text(
-                'Техническая информация',
+                context.l10n.feedbackTechnicalInformation,
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             IconButton(
-              tooltip: 'Копировать',
+              tooltip: context.l10n.feedbackCopy,
               onPressed: _copyTechnicalInfo,
               icon: const Icon(Icons.copy_outlined),
             ),
@@ -277,7 +274,11 @@ class _FeedbackSettingsSectionState extends State<FeedbackSettingsSection> {
             border: Border.all(color: Theme.of(context).dividerColor),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: SelectableText(_technicalInfo),
+          child: SelectableText(
+            _technicalInfo.isEmpty
+                ? context.l10n.feedbackLoading
+                : _technicalInfo,
+          ),
         ),
       ],
     );

@@ -1,0 +1,458 @@
+{
+  "@@locale": "ru",
+
+  "appName": "Watcher",
+
+  "language": "Язык",
+  "languageDescription": "Язык интерфейса приложения",
+  "languageSystem": "Как в системе",
+  "languageRussian": "Русский",
+  "languageEnglish": "English",
+
+  "settings": "Настройки",
+  "account": "Аккаунт",
+  "notifications": "Уведомления",
+  "updates": "Обновления",
+  "logs": "Логи",
+  "feedback": "Обратная связь",
+
+  "all": "Все",
+  "future": "Будущее",
+  "present": "Настоящее",
+  "again": "Ещё раз",
+  "past": "Прошлое",
+  "later": "Потом",
+
+  "search": "Поиск...",
+  "filters": "Фильтры",
+  "cancel": "Отмена",
+  "close": "Закрыть",
+  "save": "Сохранить",
+  "delete": "Удалить",
+  "logout": "Выйти",
+  "whatsNew": "Что нового",
+
+  "nothingFound": "Ничего не найдено",
+  "selectedCount": "Выбрано: {count}",
+
+  "@selectedCount": {
+    "description": "Количество выбранных пунктов",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+  ,
+  "versionLabel": "Версия {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+
+  "updateApp": "Обновить приложение",
+  "randomChoice": "Случайный выбор",
+  "random": "Рандом",
+  "changeTheme": "Сменить тему",
+
+  "showPast": "Показывать прошлое",
+  "showLater": "Показывать потом",
+
+  "deleteSelected": "Удалить",
+  "selectedItems": "Выбрано: {count}",
+  "@selectedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+  ,
+  "filters": "Фильтры",
+  "filtersDescription": "Можно выбрать несколько категорий одновременно.",
+  "showPast": "Показывать прошлое",
+  "showPastDescription": "Добавлять пункты из «Прошлого» в основные списки и общий поиск.",
+  "showLater": "Показывать потом",
+  "showLaterDescription": "Добавлять отложенные пункты в основные списки и общий поиск.",
+  "reset": "Сбросить",
+  "apply": "Применить",
+  "selectedCount": "Выбрано: {count}",
+  "@selectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+  ,
+  "myLists": "Мои списки",
+  "categories": "Категории",
+  "noCategories": "Категорий пока нет",
+  "newList": "Новый список",
+  "listNameHint": "Название (например, Книги)",
+  "create": "Создать",
+  "deleteListTitle": "Удалить список?",
+  "deleteListDescription": "Категория будет удалена. Пункты из неё останутся, но эта категория будет убрана из их тегов.",
+  "categoryDeleted": "Категория удалена",
+  "categoryDeleteError": "Не удалось удалить категорию",
+  "editList": "Редактировать список",
+  "newName": "Новое название",
+  "errorWithDetails": "Ошибка: {error}",
+  "@errorWithDetails": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "editItem": "Редактировать пункт",
+  "addItem": "Добавить новый пункт",
+  "title": "Название",
+  "description": "Описание",
+  "currentProgress": "Сейчас",
+  "totalProgress": "Всего",
+  "progressOf": "из",
+  "addToList": "Добавить в список",
+  "mainList": "Основной список:",
+  "hideIn": "Скрыть в:",
+  "noCategoriesHint": "Категорий пока нет. Их можно создать в боковом меню.",
+  "itemProgress": "Прогресс: {current}/{total} {unit}",
+"@itemProgress": {
+  "placeholders": {
+    "current": {
+      "type": "String"
+    },
+    "total": {
+      "type": "String"
+    },
+    "unit": {
+      "type": "String"
+    }
+  }
+},
+"logoutTitle": "Выйти?",
+"logoutDescription": "Вы действительно хотите выйти из аккаунта?",
+"installPermissionTitle": "Нужно разрешение",
+"installPermissionDescription": "Для обновления разрешите установку APK из Watcher.",
+"later": "Позже",
+"openSettings": "Открыть настройки",
+"updateAvailable": "Доступно обновление",
+"downloadingApk": "Скачиваю APK...","whatsNewInVersion": "Что нового в версии {version}",
+"releaseInfoUnavailable": "Информация об обновлении недоступна.",
+"close": "Закрыть",
+"releaseInfoLoadError": "Не удалось загрузить информацию об обновлении",
+"maintenanceUnavailable": "Проводятся технические работы. Изменения временно недоступны.",
+"apkUpdatesAndroidOnly": "Обновления APK доступны только на Android",
+"latestVersionInstalled": "Установлена актуальная версия",
+"apkInstallerOpenError": "Не удалось открыть установщик APK: {error}",
+"@apkInstallerOpenError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"updateError": "Ошибка обновления: {error}",
+"@updateError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"updateAvailableVersion": "Доступно обновление {version}",
+"@updateAvailableVersion": {
+  "placeholders": {
+    "version": {
+      "type": "String"
+    }
+  }
+},
+"update": "Обновить",
+"bulkTagRemoved": "Тег «{tag}» убран",
+"@bulkTagRemoved": {
+  "placeholders": {
+    "tag": {
+      "type": "String"
+    }
+  }
+},
+"bulkItemsMoved": "Выбранные пункты перемещены в «{tag}»",
+"@bulkItemsMoved": {
+  "placeholders": {
+    "tag": {
+      "type": "String"
+    }
+  }
+},
+"bulkChangeError": "Не удалось изменить выбранные пункты",
+"deleteSelectedItemsTitle": "Удалить выбранные пункты?",
+"deleteSelectedItemsDescription": "Будет удалено: {count}. Это действие нельзя отменить.",
+"@deleteSelectedItemsDescription": {
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+"deletedItemsCount": "Удалено пунктов: {count}",
+"@deletedItemsCount": {
+  "placeholders": {
+    "count": {
+      "type": "int"
+    }
+  }
+},
+"bulkDeleteError": "Не удалось удалить выбранные пункты",
+"randomListEmpty": "В текущем отфильтрованном списке нет подходящих элементов",
+"howAboutThis": "Как насчёт этого?",
+"untitled": "Без названия",
+"another": "Другой",
+"maintenanceDefaultMessage": "Проводятся технические работы",
+"progressUnitEpisode": "серия",
+"progressUnitPage": "стр.",
+"progressUnitChapter": "гл.",
+"progressUnitBook": "книга",
+"progressUnitSeason": "сезон",
+"progressUnitHours": "часов",
+"progressUnitAchievements": "ачивок",
+"progressUnitNone": "без единицы",
+"settings": "Настройки",
+"settingsAccount": "Аккаунт",
+"settingsNotifications": "Уведомления",
+"settingsLogs": "Логи",
+"settingsFeedback": "Обратная связь",
+"settingsUpdates": "Обновления",
+"settingsLanguage": "Язык",
+"backToWatcher": "Назад в Watcher",
+"openMenu": "Открыть меню",
+"back": "Назад",
+
+"authWait": "Подождите...",
+"authEmail": "Email",
+"authPassword": "Пароль",
+"authRepeatPassword": "Повтор пароля",
+"authSignIn": "Войти",
+"authSignInWithGoogle": "Войти через Google",
+"authSignInWithEmail": "Войти по email",
+"authContinueAsGuest": "Продолжить как гость",
+"authCreateAccount": "Создать аккаунт",
+"authAlreadyHaveAccount": "Уже есть аккаунт",
+"authForgotPassword": "Забыли пароль?",
+"authRecoveryEmail": "Email для восстановления",
+"authSending": "Отправляю...",
+"authSendEmail": "Отправить письмо",
+"authBackToSignIn": "Назад ко входу",
+
+"authEnterEmailAndPassword": "Введите email и пароль",
+"authEnterEmail": "Введите email",
+"authPasswordsDoNotMatch": "Пароли не совпадают",
+"authPasswordResetEmailSent": "Письмо для сброса пароля отправлено",
+
+"authGoogleSignInFailed": "Не удалось войти через Google",
+"authGuestSignInFailed": "Не удалось войти как гость",
+"authEmailSendFailed": "Не удалось отправить письмо",
+"authSignInFailed": "Не удалось войти",
+
+"authEmailAlreadyInUse": "Этот email уже зарегистрирован",
+"authInvalidEmail": "Некорректный email",
+"authWeakPassword": "Пароль слишком простой",
+"authUserNotFound": "Пользователь не найден",
+"authWrongEmailOrPassword": "Неверный email или пароль",
+
+"accountGuest": "Гость",
+"accountUnknownProvider": "Неизвестно",
+"accountUnnamed": "Без имени",
+"accountUserNotFound": "Пользователь не найден",
+"accountLoadFailed": "Не удалось загрузить аккаунт: {error}",
+"@accountLoadFailed": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+
+"accountSignOutQuestion": "Выйти?",
+"accountSignOutConfirmation": "Вы действительно хотите выйти из аккаунта?",
+"accountSignOut": "Выйти",
+
+"accountDeleteQuestion": "Удалить аккаунт?",
+"accountDeleteExplanation": "Аккаунт будет отключён сразу, но окончательно удалится только через 14 дней.\n\nДо этого момента его можно будет восстановить.",
+"accountDelete": "Удалить",
+"accountDeleteAccount": "Удалить аккаунт",
+
+"accountMainInformation": "Основная информация",
+"accountPersonalData": "Личные данные",
+"accountSecurity": "Безопасность",
+"accountAuthorization": "Авторизация",
+
+"accountWatcherId": "Watcher ID",
+"accountWatcherIdCopied": "Watcher ID скопирован",
+"accountLogin": "Логин",
+"accountLoginCopied": "Логин скопирован",
+
+"accountNickname": "Ник",
+"accountChangeNicknameQuestion": "Изменить ник?",
+"accountChangeNicknameExplanation": "Новый ник будет отображаться в приложении.",
+
+"accountChangeEmailQuestion": "Изменить email?",
+"accountChangeEmailExplanation": "Почта будет изменена в профиле. Перепривязку Firebase Auth добавим отдельным шагом.",
+
+"accountPassword": "Пароль",
+"accountChangePassword": "Изменить пароль",
+"accountPasswordEmailOnly": "Доступно для email-аккаунтов",
+"accountPasswordComingSoon": "Смену пароля добавим позже",
+
+"accountActiveDevices": "Активные устройства",
+"accountActiveDevicesComingSoon": "Активные устройства добавим позже",
+"accountTwoFactorProtection": "Двухфакторная защита",
+"accountTwoFactorComingSoon": "2FA добавим позже",
+"accountComingSoon": "Появится позже",
+
+"accountSignInType": "Тип входа",
+"accountLinkGoogle": "Привязать Google",
+"accountLinkGoogleComingSoon": "Привязку Google добавим позже",
+"accountLinkEmail": "Привязать Email",
+"accountLinkEmailComingSoon": "Привязку Email добавим позже",
+
+"feedbackTitle": "Обратная связь",
+"feedbackSubtitle": "Расскажи об ошибке или предложи улучшение для Watcher.",
+
+"feedbackType": "Тип обращения",
+"feedbackBug": "Баг",
+"feedbackImprovement": "Предложение",
+"feedbackOther": "Другое",
+
+"feedbackDescription": "Описание",
+"feedbackDescriptionHint": "Что произошло, чего ты ожидал(а) и как это можно повторить?",
+
+"feedbackSend": "Отправить",
+"feedbackSending": "Отправка...",
+
+"feedbackTechnicalInformation": "Техническая информация",
+"feedbackCopy": "Копировать",
+"feedbackCopied": "Скопировано",
+
+"feedbackLoading": "Загрузка...",
+"feedbackLoadFailed": "Не удалось получить информацию",
+
+"feedbackApplication": "Приложение",
+"feedbackVersion": "Версия",
+"feedbackPlatform": "Платформа",
+
+"feedbackMessageTooShort": "Опиши проблему или предложение хотя бы в 10 символах",
+"feedbackLoginRequired": "Для отправки обращения нужно войти в аккаунт",
+
+"feedbackSent": "Сообщение отправлено. Спасибо!",
+"feedbackSendFailed": "Не удалось отправить сообщение",
+"accountLinkEmailComingSoon": "Привязку Email добавим позже",
+
+"feedbackTitle": "Обратная связь",
+"feedbackSubtitle": "Расскажи об ошибке или предложи улучшение для Watcher.",
+
+"feedbackType": "Тип обращения",
+"feedbackBug": "Баг",
+"feedbackImprovement": "Предложение",
+"feedbackOther": "Другое",
+
+"feedbackDescription": "Описание",
+"feedbackDescriptionHint": "Что произошло, чего ты ожидал(а) и как это можно повторить?",
+
+"feedbackSend": "Отправить",
+"feedbackSending": "Отправка...",
+
+"feedbackTechnicalInformation": "Техническая информация",
+"feedbackCopy": "Копировать",
+"feedbackCopied": "Скопировано",
+
+"feedbackLoading": "Загрузка...",
+"feedbackLoadFailed": "Не удалось получить информацию",
+
+"feedbackApplication": "Приложение",
+"feedbackVersion": "Версия",
+"feedbackPlatform": "Платформа",
+
+"feedbackMessageTooShort": "Опиши проблему или предложение хотя бы в 10 символах",
+"feedbackLoginRequired": "Для отправки обращения нужно войти в аккаунт",
+
+"feedbackSent": "Сообщение отправлено. Спасибо!",
+"feedbackSendFailed": "Не удалось отправить сообщение",
+"feedbackPermissionDenied": "Нет разрешения на отправку. Сообщи по почте о проблеме.",
+
+"logsDescription": "Логи помогают найти причину ошибки в приложении.",
+"logsCollect": "Собирать логи",
+"logsCollectDescription": "Сбор выполняется только во время работы приложения.",
+"logsCollected": "Собранные логи",
+"logsEmpty": "Логов пока нет",
+"logsCopied": "Логи скопированы",
+"logsCleared": "Логи очищены",
+"logsShare": "Поделиться",
+"logsClear": "Очистить",
+"logsClearQuestion": "Очистить логи?",
+"logsClearExplanation": "Все собранные за текущий запуск логи будут удалены.",
+"logsShareSubject": "Watcher — логи приложения",
+"logsShareHeader": "Watcher — логи приложения",
+
+"settingCopy": "Копировать",
+"settingCopied": "Скопировано",
+"settingEdit": "Изменить",
+"settingValueTooShort": "Значение должно быть не короче 2 символов",
+"settingChangesSaved": "Изменения сохранены",
+"settingSaveFailed": "Не удалось сохранить: {error}",
+"@settingSaveFailed": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"updatesDescription": "Проверка и установка новых версий Watcher.",
+"updatesCurrentVersion": "Текущая версия",
+"updatesAvailable": "Доступно обновление",
+"updatesNewVersion": "Новая версия",
+"updatesShowIndicator": "Показывать индикатор обновления",
+"updatesIndicatorDescription": "Красная точка появится на иконке профиля, когда будет доступна новая версия.",
+"updatesCheck": "Проверить обновления",
+"updatesWhatsNew": "Что нового",
+
+"notificationsShowUpdate": "Показывать уведомление об обновлении",
+"notificationsShowUpdateDescription": "Если выключено, красная точка на иконке профиля не будет появляться.",
+"logInstallPermissionCheckError": "Ошибка проверки разрешения установки APK: {error}",
+"@logInstallPermissionCheckError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"logInstallSettingsOpenError": "Ошибка открытия настроек установки APK: {error}",
+"@logInstallSettingsOpenError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"logMaintenanceCheckError": "Ошибка проверки технических работ: {error}",
+"@logMaintenanceCheckError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+},
+"logApkDownloadStarted": "Начато скачивание APK",
+"logApkDownloaded": "APK скачан",
+"logApkUpdateError": "Ошибка обновления: {error}",
+"@logApkUpdateError": {
+  "placeholders": {
+    "error": {
+      "type": "String"
+    }
+  }
+}
+}
